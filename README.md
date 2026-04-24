@@ -17,6 +17,7 @@ This repository evolves from the ideas and behaviour of **[laravel-encryptable](
 - **DB expressions**: `Encryption::db()->decrypt()` returns a SQL snippet (MySQL vs Postgres branches) suitable for `whereRaw`-style comparisons against stored ciphertext.
 - **Validation**: `UniqueEncrypted`, `ExistsEncrypted`, and `Rule::uniqueEncrypted()` / `Rule::existsEncrypted()` macros (requires `illuminate/validation`).
 - **Multi-runtime bridges**: Laravel **10–12**, Illuminate-based **Webman**, **Hyperf 2–3**, and **ThinkPHP 6–8** each register container/config in their own way; without a full container, `Encryption::php()` can fall back to **`ENCRYPTION_KEY`** / **`ENCRYPTION_CIPHER`** (see the **Supported frameworks** table below).
+- **Composer install hook**: this package is a **Composer plugin**; on `composer require` / `composer update`, it inspects your root **`composer.json`** and **`composer.lock`** and publishes config **only for detected stacks**, using each framework’s official config layout (see **Installation → Composer plugin**).
 
 ---
 
@@ -33,7 +34,7 @@ Packagist: **[erikwang2013/encryptable](https://packagist.org/packages/erikwang2
 
 ## Supported frameworks
 
-The table below summarizes **expected compatibility**, how to wire the package, and which features are Laravel-specific (Eloquent cast, `illuminate/validation` rules). Pin versions in your own project as needed. **Copy the config files as described under Installation → Configuration files.**
+The table below summarizes **expected compatibility**, how to wire the package, and which features are Laravel-specific (Eloquent cast, `illuminate/validation` rules). Pin versions in your own project as needed. **Config files** are installed automatically by the Composer plugin when allowed (see Installation); you can still copy or `vendor:publish` manually if you prefer.
 
 | Framework | Version (expected) | Integration | Eloquent `$casts` (`Encryptable`) | `Encryption::php()` | `Encryption::db()` | `UniqueEncrypted` / `ExistsEncrypted` & macros |
 |-----------|--------------------|--------------|-------------------------------------|----------------------|---------------------|--------------------------------------------------|
@@ -52,9 +53,38 @@ The table below summarizes **expected compatibility**, how to wire the package, 
 composer require erikwang2013/encryptable
 ```
 
-### Configuration files (copy into your framework’s config directory)
+### Composer plugin (auto-publish config)
 
-For the stack you use, **copy the matching template from this package into the path your framework expects**, then adjust `.env` as needed.
+This package has `"type": "composer-plugin"` and registers `Maize\Encryptable\Composer\Plugin`. After **install** or **update** of `erikwang2013/encryptable`, Composer runs the plugin, which:
+
+1. Collects package names from the **root** `composer.json` (`require` and `require-dev`) and from **`composer.lock`** (`packages` and `packages-dev`), lowercased.
+2. Publishes files **only when a supported framework is detected** (see table). Existing target files are **never overwritten**.
+3. If **no** supported framework is found, it prints a skip notice so plain PHP projects are not modified.
+
+| Detected dependency (examples) | Official layout we follow | File we create when missing |
+|--------------------------------|---------------------------|-----------------------------|
+| `laravel/framework` or `laravel/lumen-framework` | [Laravel configuration](https://laravel.com/docs/configuration) — PHP files under `config/` | `config/encryptable.php` (flat `key` / `cipher`, merged as `config('encryptable.*')`) |
+| `workerman/webman` | [Webman configuration](https://www.workerman.net/doc/webman/config.html) — `config/*.php` | `config/encryptable.php` |
+| `topthink/framework` or `topthink/think` | [ThinkPHP 8 config](https://doc.thinkphp.cn/v8_0/config_file.html) — project `config/` | `config/encryptable.php` |
+| `hyperf/framework` or `hyperf/hyperf` | [Hyperf config](https://hyperf.wiki/en/config.html) — merge configs in `config/autoload/` | `config/autoload/encryptable.php` (stub returns `['encryptable' => [...]]`) |
+
+**Hyperf-only** projects get **`config/autoload/encryptable.php` only** (no `config/encryptable.php`). **Laravel / Lumen / Webman / ThinkPHP** get **`config/encryptable.php`**. If multiple stacks match (e.g. a monorepo), every applicable file is created when missing.
+
+**Composer 2.2+** may block plugins until you allow them. Add this to your application `composer.json` (once), then run `composer require` again if needed:
+
+```json
+"config": {
+    "allow-plugins": {
+        "erikwang2013/encryptable": true
+    }
+}
+```
+
+Or approve the prompt Composer shows when requiring the package.
+
+### Configuration files (manual copy, optional)
+
+If the plugin is blocked or you manage config in VCS templates yourself, **copy the matching template from this package into the path your framework expects**, then adjust `.env` as needed.
 
 | Framework | Source inside `vendor` (package `erikwang2013/encryptable`) | Destination in your project |
 |-----------|--------------------------------------------------------------|------------------------------|

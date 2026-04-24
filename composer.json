@@ -20,9 +20,11 @@
             "role": "Developer"
         }
     ],
+    "type": "composer-plugin",
     "require": {
         "php": "^8.2",
         "ext-openssl": "*",
+        "composer-plugin-api": "^2.2",
         "psr/container": "^1.1|^2.0"
     },
     "require-dev": {
@@ -56,10 +58,12 @@
     "config": {
         "sort-packages": true,
         "allow-plugins": {
+            "erikwang2013/encryptable": true,
             "pestphp/pest-plugin": true
         }
     },
     "extra": {
+        "class": "Maize\\Encryptable\\Composer\\Plugin",
         "laravel": {
             "providers": [
                 "Maize\\Encryptable\\EncryptableServiceProvider"

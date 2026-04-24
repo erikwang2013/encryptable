@@ -17,6 +17,7 @@
 - **数据库表达式**：`Encryption::db()->decrypt()` 返回可在 SQL 中拼接的解密片段（MySQL / Postgres 语法分支），便于 `whereRaw` 等与密文列对照查询。
 - **校验规则**：`UniqueEncrypted`、`ExistsEncrypted` 及 `Rule::uniqueEncrypted()` / `Rule::existsEncrypted()` 宏（依赖 Laravel 的 `illuminate/validation`）。
 - **多运行时桥接**：在 **Laravel 10–12**、基于 Illuminate 的 **Webman**、**Hyperf 2–3**、**ThinkPHP 6–8** 下通过各自方式注册容器与配置；无完整容器时可用环境变量兜底 `Encryption::php()`（各栈能力与接入方式见下文 **「支持的框架」** 表格）。
+- **Composer 安装钩子**：本包为 **Composer 插件**（`composer-plugin`）。安装/更新时会读取根目录 **`composer.json`**（`require` / `require-dev`）与 **`composer.lock`** 中的包名，**仅在识别到支持的框架时**，按该框架官方约定路径写入默认配置；未识别则跳过并提示。**不会覆盖**已有配置文件。详见 **「安装 → Composer 插件」**。
 
 ---
 
@@ -33,7 +34,7 @@ Composer 包名：**[erikwang2013/encryptable](https://packagist.org/packages/er
 
 ## 支持的框架
 
-下表说明各栈的**约定兼容范围**、接入方式，以及本包能力与 Laravel 专属能力（Eloquent Cast、基于 `illuminate/validation` 的规则）的对应关系。实际以你项目锁定的 PHP / 框架小版本为准。**配置文件请按下文「安装 → 配置文件」表格复制到对应目录。**
+下表说明各栈的**约定兼容范围**、接入方式，以及本包能力与 Laravel 专属能力（Eloquent Cast、基于 `illuminate/validation` 的规则）的对应关系。实际以你项目锁定的 PHP / 框架小版本为准。**配置文件**在允许 Composer 插件时会自动安装（见「安装」）；也可按下文表格手动 `cp` 或使用 `vendor:publish`。
 
 | 框架 | 版本（约定） | 接入方式 | Eloquent `$casts`（`Encryptable`） | `Encryption::php()` | `Encryption::db()` | `UniqueEncrypted` / `ExistsEncrypted` 与宏 |
 |------|----------------|----------|-----------------------------------|---------------------|---------------------|---------------------------------------------|
@@ -52,9 +53,38 @@ Composer 包名：**[erikwang2013/encryptable](https://packagist.org/packages/er
 composer require erikwang2013/encryptable
 ```
 
-### 配置文件（按框架复制到配置目录）
+### Composer 插件（自动发布配置）
 
-根据当前项目使用的框架，**将包内对应模板复制到该框架约定的配置路径**（再按需修改 `.env` 等）。
+本包为 `"type": "composer-plugin"`，通过 `extra.class` 注册 `Maize\Encryptable\Composer\Plugin`。在 **`erikwang2013/encryptable` 被安装或更新**后，插件会：
+
+1. 汇总根项目 **`composer.json`** 里 `require`、`require-dev` 的包名，以及 **`composer.lock`** 里 `packages`、`packages-dev` 的包名（统一小写比对）。
+2. **仅当识别到下方表格中的框架依赖时**才写入文件；目标文件已存在则**跳过**（不覆盖）。
+3. **未识别到任何支持框架**时只输出跳过说明，避免在纯 PHP 库里误建 `config/`。
+
+| 识别到的依赖（示例） | 遵循的官方约定 | 若缺失则创建的文件 |
+|----------------------|------------------|---------------------|
+| `laravel/framework` 或 `laravel/lumen-framework` | [Laravel 配置](https://laravel.com/docs/configuration) — 根目录 `config/` 下 PHP 配置 | `config/encryptable.php`（扁平 `key` / `cipher`，对应 `config('encryptable.*')`） |
+| `workerman/webman` | [Webman 配置](https://www.workerman.net/doc/webman/config.html) — `config/*.php` | `config/encryptable.php` |
+| `topthink/framework` 或 `topthink/think` | [ThinkPHP 8 配置文件](https://doc.thinkphp.cn/v8_0/config_file.html) — 应用 `config/` | `config/encryptable.php` |
+| `hyperf/framework` 或 `hyperf/hyperf` | [Hyperf 配置](https://hyperf.wiki/zh-cn/config.html) — `config/autoload/` 合并配置 | `config/autoload/encryptable.php`（stub 内为 `['encryptable' => [...]]`） |
+
+**仅 Hyperf** 时只发布 **`config/autoload/encryptable.php`**，不发布根级 `config/encryptable.php`。若同时识别多种栈（如单体仓库），则对每种缺失文件分别发布。
+
+**Composer 2.2+** 默认可能拦截插件，需在业务项目的 `composer.json` 中允许本包（配置一次即可；若已拒绝过可删 `composer.lock` 后重试或手动加）：
+
+```json
+"config": {
+    "allow-plugins": {
+        "erikwang2013/encryptable": true
+    }
+}
+```
+
+也可在 `composer require` 时按 Composer 交互提示选择信任本插件。
+
+### 配置文件（手动复制，可选）
+
+若未启用插件或希望自行管理模板，可**将包内对应文件复制到框架约定路径**（再按需修改 `.env` 等）。
 
 | 框架 | 复制源（vendor 内路径，包名以 `erikwang2013/encryptable` 为准） | 复制到（项目内目标路径） |
 |------|------------------------------------------------------------------|--------------------------|
