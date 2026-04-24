@@ -25,4 +25,17 @@ return [
     */
 
     'cipher' => env('ENCRYPTION_CIPHER', 'aes-128-ecb'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Previous encryption keys (rotation)
+    |--------------------------------------------------------------------------
+    |
+    | Retired keys still accepted for decrypting existing ciphertext. Use the
+    | same cipher as the primary key. Env ENCRYPTION_PREVIOUS_KEYS: comma list
+    | or JSON array, e.g. "old16bytekeyaaa,older16bytekey" or ["k1","k2"].
+    |
+    */
+
+    'previous_keys' => \Maize\Encryptable\Support\PreviousKeysParser::parse(env('ENCRYPTION_PREVIOUS_KEYS')),
 ];

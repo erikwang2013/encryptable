@@ -3,6 +3,7 @@
 namespace Maize\Encryptable\Config;
 
 use Maize\Encryptable\Contracts\EncryptableConfigContract;
+use Maize\Encryptable\Support\PreviousKeysParser;
 
 class EnvEncryptableConfig implements EncryptableConfigContract
 {
@@ -26,5 +27,16 @@ class EnvEncryptableConfig implements EncryptableConfigContract
         }
 
         return (string) $value;
+    }
+
+    public function getPreviousKeys(): array
+    {
+        $raw = $_ENV['ENCRYPTION_PREVIOUS_KEYS'] ?? $_SERVER['ENCRYPTION_PREVIOUS_KEYS'] ?? getenv('ENCRYPTION_PREVIOUS_KEYS');
+
+        if ($raw === false) {
+            $raw = null;
+        }
+
+        return PreviousKeysParser::parse($raw);
     }
 }

@@ -16,8 +16,9 @@
 - **PHP 侧加解密**：`Encryption::php()->encrypt()` / `decrypt()`，适合命令行、队列、非模型场景。
 - **数据库表达式**：`Encryption::db()->decrypt()` 返回可在 SQL 中拼接的解密片段（MySQL / Postgres 语法分支），便于 `whereRaw` 等与密文列对照查询。
 - **校验规则**：`UniqueEncrypted`、`ExistsEncrypted` 及 `Rule::uniqueEncrypted()` / `Rule::existsEncrypted()` 宏（依赖 Laravel 的 `illuminate/validation`）。
-- **多运行时桥接**：在 **Laravel 10–12**、基于 Illuminate 的 **Webman**、**Hyperf 2–3**、**ThinkPHP 6–8** 下通过各自方式注册容器与配置；无完整容器时可用环境变量兜底 `Encryption::php()`（各栈能力与接入方式见下文 **「支持的框架」** 表格）。
+- **多运行时桥接**：在 **Laravel 10–12**、基于 Illuminate 的 **Webman**、**Hyperf 2–3**、**ThinkPHP 6–8** 下通过各自方式注册容器与配置；无完整容器时可用 **`ENCRYPTION_KEY`**、**`ENCRYPTION_CIPHER`**、可选 **`ENCRYPTION_PREVIOUS_KEYS`** 兜底 `Encryption::php()`（各栈能力与接入方式见下文 **「支持的框架」** 表格）。
 - **Composer 安装钩子**：本包为 **Composer 插件**（`composer-plugin`）。安装/更新时会读取 **`vendor/composer/installed.php`**、**`composer.lock`**、**`composer.json`**，并结合**目录结构**判断当前项目栈，再按各框架官方路径写入默认配置；未识别则跳过。**不会覆盖**已有配置文件。详见 **「安装 → Composer 插件」**。
+- **密钥优雅轮换（仅 `Encryption::php()` 路径）**：主密钥 + `previous_keys` / `ENCRYPTION_PREVIOUS_KEYS` 解密环，可选 **`rotateToCurrentKey()`** 渐进重加密；完整行为说明、上线步骤与配置入口见 **「配置说明 → 密钥优雅轮换」**。
 
 ---
 
@@ -149,10 +150,43 @@ php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvi
 
 | 键 | 说明 |
 |----|------|
-| `key` | 加密密钥，对应环境变量 `ENCRYPTION_KEY`。**一旦用于生产数据，请勿随意更换**，否则历史密文无法解密。 |
-| `cipher` | 算法标识，默认 `aes-128-ecb`，对应 `ENCRYPTION_CIPHER`；需与数据库侧（如 MySQL 默认）及既有数据约定一致。 |
+| `key` | 当前主密钥，对应 `ENCRYPTION_KEY`；**新密文**始终用该密钥加密。 |
+| `cipher` | 算法标识，默认 `aes-128-ecb`，对应 `ENCRYPTION_CIPHER`；需与数据库侧及既有数据约定一致。**密钥环内所有密钥须使用同一 `cipher`。** |
+| `previous_keys` | 已下线但仍用于**解密**尝试的密钥列表，在 `key` 解密失败后再依次尝试。来自 `ENCRYPTION_PREVIOUS_KEYS`（逗号分隔或 JSON 数组）或配置项 `previous_keys`。 |
 
-无 Laravel / 未绑定容器时，`Encryption::php()` 可回退读取 **`ENCRYPTION_KEY`**、**`ENCRYPTION_CIPHER`**（见 `EnvEncryptableConfig`）。
+无 Laravel / 未绑定容器时，`Encryption::php()` 可回退读取 **`ENCRYPTION_KEY`**、**`ENCRYPTION_CIPHER`**、**`ENCRYPTION_PREVIOUS_KEYS`**（见 `EnvEncryptableConfig`）。
+
+### 密钥优雅轮换（应用层、零停机思路）
+
+在**不强制全库立刻重加密**的前提下更换主密钥：**新写入**始终用当前 `ENCRYPTION_KEY`（主密钥）；**历史密文**只要其加密时所用的密钥仍在「密钥环」（主密钥或 `previous_keys`）内，即可继续解密。
+
+#### 行为说明（本包实现摘要）
+
+| 方面 | 行为 |
+|------|------|
+| **配置契约** | `EncryptableConfigContract::getPreviousKeys(): array` 表示仅用于**解密兜底**的已下线密钥列表，在主密钥 `getKey()` 无法解出合法明文后再**按顺序**尝试。Laravel（`encryptable.previous_keys`）、Webman 插件 `app.php`、Hyperf（`plugins.*` / `encryptable.*`）、ThinkPHP（`encryptable.previous_keys`）、无容器时的 `EnvEncryptableConfig`（`ENCRYPTION_PREVIOUS_KEYS`）均已对接。 |
+| **解析** | `Maize\Encryptable\Support\PreviousKeysParser` 将环境变量或配置统一为 `list<string>`：支持逗号分隔、`["k1","k2"]` 形式的 JSON 字符串、或 PHP 数组。 |
+| **密钥环** | 基类 `Encrypter::getDecryptionKeyRing()` 生成 `[主密钥, …previous_keys]`，去空、去与主密钥重复项。**环内所有密钥须与主密钥使用同一 `cipher`。** |
+| **加密** | `PHPEncrypter::encrypt()` **仅使用主密钥**（`getKey()`），不会用 `previous_keys` 加密。 |
+| **解密与 `isEncrypted()`** | 对每个候选密钥尝试 OpenSSL 解密；仅当解密结果以包内约定的脏前缀（`crypt:`）开头时才视为成功，避免把错误密钥产生的乱码当成明文。Eloquent `Encryptable` 等经 `Encryption::php()` 的路径与此一致。 |
+| **重加密 API** | `PHPEncrypter::rotateToCurrentKey(?string $payload, bool $serialize = true)`：先用密钥环解密，再用**当前主密钥**加密。`Encryption::php()->rotateToCurrentKey(...)` 为其代理。非密文原样返回，`null` 仍为 `null`。 |
+| **不适用场景** | **`Encryption::db()` / `DBEncrypter`**：生成 SQL 时**只嵌入主密钥**，**不读取** `previous_keys`。数据库函数侧密文轮换需在应用层或迁移脚本中解密再写回，不能依赖本节的密钥环。 |
+
+#### 建议上线步骤（运维）
+
+1. 将**新**密钥写入 `ENCRYPTION_KEY`；将**旧主密钥**加入 `ENCRYPTION_PREVIOUS_KEYS`（或配置的 `previous_keys`）。若有多枚旧钥，建议**最近退役的排在前面**。
+2. 发布部署后，读路径自动按「主 → 旧」尝试，业务无需停机切换密文。
+3. （可选）用队列/命令对字段逐条调用 **`Encryption::php()->rotateToCurrentKey($密文)`**（`$serialize` 须与写入时一致），使密文逐步改为新主密钥加密；之后可缩短 `previous_keys` 列表。
+4. 从 `previous_keys` 中删除某一旧密钥前，须确认**已无任何数据**仍依赖该密钥加密，否则对应行将无法解密。
+
+#### 配置入口一览
+
+| 来源 | 键名 |
+|------|------|
+| 环境变量 | `ENCRYPTION_KEY`、`ENCRYPTION_CIPHER`、`ENCRYPTION_PREVIOUS_KEYS` |
+| Laravel / 合并后的 `encryptable` | `key`、`cipher`、`previous_keys`（见包内 `config/encryptable.php` 或已发布的插件 `app.php`） |
+| Webman 插件 `app.php` | 同上；框架侧读取路径为 `plugin.*.app.*` |
+| Hyperf autoload 模板 | `key`、`cipher`、`previous_keys`（推荐 `plugins.erikwang2013.encryptable.*` 或旧版 `encryptable.*`） |
 
 ---
 

@@ -16,8 +16,9 @@ This repository evolves from the ideas and behaviour of **[laravel-encryptable](
 - **PHP-side crypto**: `Encryption::php()->encrypt()` / `decrypt()` for CLI, queues, or non-model code paths.
 - **DB expressions**: `Encryption::db()->decrypt()` returns a SQL snippet (MySQL vs Postgres branches) suitable for `whereRaw`-style comparisons against stored ciphertext.
 - **Validation**: `UniqueEncrypted`, `ExistsEncrypted`, and `Rule::uniqueEncrypted()` / `Rule::existsEncrypted()` macros (requires `illuminate/validation`).
-- **Multi-runtime bridges**: Laravel **10–12**, Illuminate-based **Webman**, **Hyperf 2–3**, and **ThinkPHP 6–8** each register container/config in their own way; without a full container, `Encryption::php()` can fall back to **`ENCRYPTION_KEY`** / **`ENCRYPTION_CIPHER`** (see the **Supported frameworks** table below).
+- **Multi-runtime bridges**: Laravel **10–12**, Illuminate-based **Webman**, **Hyperf 2–3**, and **ThinkPHP 6–8** each register container/config in their own way; without a full container, `Encryption::php()` can fall back to **`ENCRYPTION_KEY`**, **`ENCRYPTION_CIPHER`**, and optional **`ENCRYPTION_PREVIOUS_KEYS`** (see the **Supported frameworks** table below).
 - **Composer install hook**: this package is a **Composer plugin**; on `composer require` / `composer update`, it inspects **`vendor/composer/installed.php`**, lock, manifest, and **project layout** to publish config for the stack in use (see **Installation → Composer plugin**).
+- **Key rotation (`Encryption::php()` only)**: primary + `previous_keys` / `ENCRYPTION_PREVIOUS_KEYS` decryption ring, optional `rotateToCurrentKey()` for gradual re-encryption — full behavior and rollout are documented under **Configuration → Key rotation**.
 
 ---
 
@@ -149,10 +150,43 @@ After copying or publishing **`config/plugin/erikwang2013/encryptable/app.php`**
 
 | Key | Description |
 |-----|-------------|
-| `key` | Secret key, from `ENCRYPTION_KEY`. **Do not rotate casually in production** or existing ciphertext becomes unreadable. |
-| `cipher` | Cipher id, default `aes-128-ecb`, from `ENCRYPTION_CIPHER`; keep aligned with DB defaults and any existing data contract. |
+| `key` | Primary secret key, from `ENCRYPTION_KEY`. New ciphertext is always produced with this key. |
+| `cipher` | Cipher id, default `aes-128-ecb`, from `ENCRYPTION_CIPHER`; keep aligned with DB defaults and any existing data contract. **All keys in the ring must use this cipher.** |
+| `previous_keys` | Retired keys still tried for **decrypt** after the primary fails (same cipher). From `ENCRYPTION_PREVIOUS_KEYS` (comma-separated or JSON array) or the `previous_keys` config entry. |
 
-Without Laravel / bindings, `Encryption::php()` can still read **`ENCRYPTION_KEY`** and **`ENCRYPTION_CIPHER`** via `EnvEncryptableConfig`.
+Without Laravel / bindings, `Encryption::php()` can still read **`ENCRYPTION_KEY`**, **`ENCRYPTION_CIPHER`**, and **`ENCRYPTION_PREVIOUS_KEYS`** via `EnvEncryptableConfig`.
+
+### Key rotation (elegant zero-downtime)
+
+You can **change the primary encryption key without taking the app offline for a big-bang re-encrypt**: new data is sealed with the new primary; existing rows keep decrypting as long as the key that produced them still appears in the configured ring (primary or `previous_keys`).
+
+#### Behavior summary (what this package implements)
+
+| Area | Behavior |
+|------|----------|
+| **Config contract** | `EncryptableConfigContract::getPreviousKeys(): array` — retired keys used **only after** the primary `getKey()` fails to produce valid plaintext. Implemented for Laravel (`encryptable.previous_keys`), Webman plugin `app.php`, Hyperf (`plugins.*` / `encryptable.*`), ThinkPHP (`encryptable.previous_keys`), and `EnvEncryptableConfig` (`ENCRYPTION_PREVIOUS_KEYS`). |
+| **Parsing** | `Maize\Encryptable\Support\PreviousKeysParser` turns `ENCRYPTION_PREVIOUS_KEYS` or config into a `list<string>`: comma-separated values, or a JSON array string (e.g. `["k1","k2"]`), or an already-loaded PHP array. |
+| **Key ring** | `Encrypter::getDecryptionKeyRing()` builds `[primary, …previous]` with empty strings and duplicate keys removed. **All keys in the ring must share the same `cipher`.** |
+| **Encrypt** | `PHPEncrypter::encrypt()` always uses the **primary** key only (`getKey()`). |
+| **Decrypt & `isEncrypted()`** | For each ring key, OpenSSL decrypt is tried; success requires decrypted payload to start with the internal dirty prefix (`crypt:`), so random garbage from a wrong key is not treated as valid. Same logic powers Eloquent `Encryptable` casts via `Encryption::php()`. |
+| **Re-encrypt API** | `PHPEncrypter::rotateToCurrentKey(?string $payload, bool $serialize = true)` decrypts with the ring then re-encrypts with the **current** primary. **`Encryption::php()->rotateToCurrentKey(...)`** delegates to it. Non-encrypted payloads are returned unchanged; `null` stays `null`. |
+| **Out of scope** | **`Encryption::db()` / `DBEncrypter`** — SQL snippets use the **primary** key only. `previous_keys` is **ignored** there. Rotate DB-native encrypted columns with an app-side or migration pipeline (read → decrypt in PHP if needed → write), not via this ring. |
+
+#### Recommended rollout (operations)
+
+1. Set the **new** secret as `ENCRYPTION_KEY` (primary). Move the **old** primary into `ENCRYPTION_PREVIOUS_KEYS` (or `previous_keys` in config). Prefer listing the **most recently retired** key first among several retirees.
+2. Deploy — reads succeed because decrypt walks the ring until a key yields valid package plaintext.
+3. Optionally run a background job that loads each encrypted field and calls **`Encryption::php()->rotateToCurrentKey($ciphertext)`** (with the same `$serialize` flag your data used) so ciphertext gradually moves to the new primary; then traffic no longer depends on old keys.
+4. Remove an entry from `previous_keys` only after you are sure **no** row still encrypted with that key remains (or you accept those rows becoming unreadable).
+
+#### Configuration surface
+
+| Source | Keys |
+|--------|------|
+| Environment | `ENCRYPTION_KEY`, `ENCRYPTION_CIPHER`, `ENCRYPTION_PREVIOUS_KEYS` |
+| Laravel / merged `encryptable` | `key`, `cipher`, `previous_keys` (see `config/encryptable.php` or published plugin `app.php`) |
+| Webman plugin `app.php` | `key`, `cipher`, `previous_keys` (same shape; Webman reads `plugin.*.app.*`) |
+| Hyperf autoload stubs | `key`, `cipher`, `previous_keys` under `plugins.erikwang2013.encryptable.*` or legacy `encryptable.*` |
 
 ---
 

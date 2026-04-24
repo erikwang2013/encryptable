@@ -40,4 +40,28 @@ abstract class Encrypter
 
         return $cipher;
     }
+
+    /**
+     * Primary key first, then {@see EncryptableConfigContract::getPreviousKeys()} (deduplicated).
+     *
+     * @return list<string>
+     */
+    protected function getDecryptionKeyRing(): array
+    {
+        $primary = $this->getEncryptionKey();
+        $ring = [$primary];
+
+        foreach ($this->encryptableConfig->getPreviousKeys() as $key) {
+            $key = trim((string) $key);
+            if ($key === '' || $key === $primary) {
+                continue;
+            }
+            if (in_array($key, $ring, true)) {
+                continue;
+            }
+            $ring[] = $key;
+        }
+
+        return $ring;
+    }
 }

@@ -6,6 +6,10 @@ use Maize\Encryptable\Contracts\DbDriverDetector;
 use Maize\Encryptable\Contracts\EncryptableConfigContract;
 use Maize\Encryptable\Exceptions\EncryptException;
 
+/**
+ * SQL decrypt helpers use the **primary** key only. Rotating DB-side ciphertext
+ * requires re-encryption (e.g. read with PHP decrypt after migrating keys, or ALTER pipeline).
+ */
 class DBEncrypter extends Encrypter
 {
     public function __construct(

@@ -3,6 +3,7 @@
 namespace Maize\Encryptable\Bridge\ThinkPHP;
 
 use Maize\Encryptable\Contracts\EncryptableConfigContract;
+use Maize\Encryptable\Support\PreviousKeysParser;
 use think\facade\Config;
 
 class ThinkEncryptableConfig implements EncryptableConfigContract
@@ -27,5 +28,10 @@ class ThinkEncryptableConfig implements EncryptableConfigContract
         }
 
         return (string) $cipher;
+    }
+
+    public function getPreviousKeys(): array
+    {
+        return PreviousKeysParser::parse(Config::get('encryptable.previous_keys', []));
     }
 }

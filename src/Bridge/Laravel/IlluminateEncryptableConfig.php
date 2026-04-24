@@ -3,6 +3,7 @@
 namespace Maize\Encryptable\Bridge\Laravel;
 
 use Maize\Encryptable\Contracts\EncryptableConfigContract;
+use Maize\Encryptable\Support\PreviousKeysParser;
 
 class IlluminateEncryptableConfig implements EncryptableConfigContract
 {
@@ -26,5 +27,10 @@ class IlluminateEncryptableConfig implements EncryptableConfigContract
         }
 
         return (string) $cipher;
+    }
+
+    public function getPreviousKeys(): array
+    {
+        return PreviousKeysParser::parse(config('encryptable.previous_keys', []));
     }
 }

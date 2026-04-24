@@ -5,6 +5,7 @@ namespace Maize\Encryptable\Bridge\Hyperf;
 use Hyperf\Contract\ConfigInterface;
 use Maize\Encryptable\Contracts\EncryptableConfigContract;
 use Maize\Encryptable\Support\PackagePluginPaths;
+use Maize\Encryptable\Support\PreviousKeysParser;
 
 class HyperfEncryptableConfig implements EncryptableConfigContract
 {
@@ -37,5 +38,14 @@ class HyperfEncryptableConfig implements EncryptableConfigContract
         }
 
         return (string) $cipher;
+    }
+
+    public function getPreviousKeys(): array
+    {
+        $prefix = PackagePluginPaths::hyperfPluginConfigDotPrefix();
+        $raw = $this->config->get($prefix.'.previous_keys')
+            ?? $this->config->get('encryptable.previous_keys', []);
+
+        return PreviousKeysParser::parse($raw);
     }
 }

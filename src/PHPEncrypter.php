@@ -54,21 +54,50 @@ class PHPEncrypter extends Encrypter
         return $payload;
     }
 
+    /**
+     * Decrypt with any key in the ring, then encrypt with the current primary key (for gradual re-encryption).
+     */
+    public function rotateToCurrentKey(?string $payload, bool $serialize = true): ?string
+    {
+        if ($payload === null) {
+            return null;
+        }
+
+        if (! $this->isEncrypted($payload)) {
+            return $payload;
+        }
+
+        $plain = $this->decrypt($payload, $serialize);
+
+        return $this->encrypt($plain, $serialize);
+    }
+
     public function isEncrypted($value): bool
     {
         if (! is_string($value)) {
             return false;
         }
 
-        try {
-            $value = $this->base64Decode($value);
+        $cipher = $this->getEncryptionCipher();
 
-            $value = $this->openSSLDecrypt($value);
-
-            return str_starts_with($value, self::DIRTY_BIT_KEY);
-        } catch (\Exception $e) {
-            return false;
+        foreach ($this->getDecryptionKeyRing() as $key) {
+            try {
+                $decoded = $this->base64Decode($value);
+                $decrypted = openssl_decrypt(
+                    $decoded,
+                    $cipher,
+                    $key,
+                    OPENSSL_RAW_DATA
+                );
+                if ($decrypted !== false && str_starts_with($decrypted, self::DIRTY_BIT_KEY)) {
+                    return true;
+                }
+            } catch (\Throwable) {
+                continue;
+            }
         }
+
+        return false;
     }
 
     protected function addDirtyBit(string $value): string
@@ -122,18 +151,21 @@ class PHPEncrypter extends Encrypter
 
     protected function openSSLDecrypt(string $payload): string
     {
-        $payload = openssl_decrypt(
-            $payload,
-            $this->getEncryptionCipher(),
-            $this->getEncryptionKey(),
-            OPENSSL_RAW_DATA
-        );
+        $cipher = $this->getEncryptionCipher();
 
-        if (! $payload) {
-            throw new DecryptException('Could not decrypt the data.');
+        foreach ($this->getDecryptionKeyRing() as $key) {
+            $decrypted = openssl_decrypt(
+                $payload,
+                $cipher,
+                $key,
+                OPENSSL_RAW_DATA
+            );
+            if ($decrypted !== false && str_starts_with($decrypted, self::DIRTY_BIT_KEY)) {
+                return $decrypted;
+            }
         }
 
-        return $payload;
+        throw new DecryptException('Could not decrypt the data.');
     }
 
     protected function removeDirtyBit(string $payload): string

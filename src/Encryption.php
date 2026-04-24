@@ -62,6 +62,19 @@ class Encryption
             ->decrypt($payload, $unserialize);
     }
 
+    /**
+     * Re-encrypt a payload with the current primary key after decrypting with any key in the ring.
+     * Only available when using {@see self::php()} (application-level OpenSSL payloads).
+     */
+    public function rotateToCurrentKey(?string $payload, bool $serialize = true): ?string
+    {
+        if (! $this->encrypter instanceof PHPEncrypter) {
+            throw new RuntimeException('rotateToCurrentKey is only supported for Encryption::php().');
+        }
+
+        return $this->encrypter->rotateToCurrentKey($payload, $serialize);
+    }
+
     private static function resolve(string $abstract): object
     {
         if (class_exists(\Hyperf\Context\ApplicationContext::class)) {

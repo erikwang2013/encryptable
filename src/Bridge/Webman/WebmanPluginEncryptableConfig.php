@@ -4,6 +4,7 @@ namespace Maize\Encryptable\Bridge\Webman;
 
 use Maize\Encryptable\Contracts\EncryptableConfigContract;
 use Maize\Encryptable\Support\PackagePluginPaths;
+use Maize\Encryptable\Support\PreviousKeysParser;
 
 /**
  * Reads options published under Webman's official plugin config path:
@@ -65,5 +66,10 @@ final class WebmanPluginEncryptableConfig implements EncryptableConfigContract
         }
 
         return (string) $cipher;
+    }
+
+    public function getPreviousKeys(): array
+    {
+        return PreviousKeysParser::parse(config(self::configDotPrefix().'.previous_keys', []));
     }
 }
