@@ -17,7 +17,7 @@ This repository evolves from the ideas and behaviour of **[laravel-encryptable](
 - **DB expressions**: `Encryption::db()->decrypt()` returns a SQL snippet (MySQL vs Postgres branches) suitable for `whereRaw`-style comparisons against stored ciphertext.
 - **Validation**: `UniqueEncrypted`, `ExistsEncrypted`, and `Rule::uniqueEncrypted()` / `Rule::existsEncrypted()` macros (requires `illuminate/validation`).
 - **Multi-runtime bridges**: Laravel **10–12**, Illuminate-based **Webman**, **Hyperf 2–3**, and **ThinkPHP 6–8** each register container/config in their own way; without a full container, `Encryption::php()` can fall back to **`ENCRYPTION_KEY`** / **`ENCRYPTION_CIPHER`** (see the **Supported frameworks** table below).
-- **Composer install hook**: this package is a **Composer plugin**; on `composer require` / `composer update`, it inspects your root **`composer.json`** and **`composer.lock`** and publishes config **only for detected stacks**, using each framework’s official config layout (see **Installation → Composer plugin**).
+- **Composer install hook**: this package is a **Composer plugin**; on `composer require` / `composer update`, it inspects **`vendor/composer/installed.php`**, lock, manifest, and **project layout** to publish config for the stack in use (see **Installation → Composer plugin**).
 
 ---
 
@@ -57,9 +57,10 @@ composer require erikwang2013/encryptable
 
 This package has `"type": "composer-plugin"` and registers `Maize\Encryptable\Composer\Plugin`. After **install** or **update** of `erikwang2013/encryptable`, Composer runs the plugin, which:
 
-1. Collects package names from the **root** `composer.json` (`require` and `require-dev`) and from **`composer.lock`** (`packages` and `packages-dev`), lowercased.
-2. Publishes files **only when a supported framework is detected** (see table). Existing target files are **never overwritten**.
-3. If **no** supported framework is found, it prints a skip notice so plain PHP projects are not modified.
+1. Collects Composer package names (lowercased) from, in order: **`vendor/composer/installed.php`** (and **`installed.json`** if present), **`composer.lock`**, then root **`composer.json`** `require` / `require-dev`. This matches **what is actually installed in `vendor/`**, including transitive Webman / Hyperf packages that never appear in your root `composer.json`.
+2. Adds **filesystem hints** when needed (e.g. Webman: `support/bootstrap.php`, `start.php`, or `windows.php` plus `config/`; Laravel: `artisan` + `bootstrap/app.php` or `app/Http/Kernel.php`; Hyperf: `bin/hyperf.php` or `config/autoload/server.php`; ThinkPHP: executable `think` file in the project root).
+3. Publishes files **only when a supported framework is detected** (see table). Existing target files are **never overwritten**.
+4. If **nothing** matches, it prints a skip notice so plain PHP projects are not modified.
 
 | Detected dependency (examples) | Official layout we follow | File we create when missing |
 |--------------------------------|---------------------------|-----------------------------|

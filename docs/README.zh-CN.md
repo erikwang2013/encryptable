@@ -17,7 +17,7 @@
 - **数据库表达式**：`Encryption::db()->decrypt()` 返回可在 SQL 中拼接的解密片段（MySQL / Postgres 语法分支），便于 `whereRaw` 等与密文列对照查询。
 - **校验规则**：`UniqueEncrypted`、`ExistsEncrypted` 及 `Rule::uniqueEncrypted()` / `Rule::existsEncrypted()` 宏（依赖 Laravel 的 `illuminate/validation`）。
 - **多运行时桥接**：在 **Laravel 10–12**、基于 Illuminate 的 **Webman**、**Hyperf 2–3**、**ThinkPHP 6–8** 下通过各自方式注册容器与配置；无完整容器时可用环境变量兜底 `Encryption::php()`（各栈能力与接入方式见下文 **「支持的框架」** 表格）。
-- **Composer 安装钩子**：本包为 **Composer 插件**（`composer-plugin`）。安装/更新时会读取根目录 **`composer.json`**（`require` / `require-dev`）与 **`composer.lock`** 中的包名，**仅在识别到支持的框架时**，按该框架官方约定路径写入默认配置；未识别则跳过并提示。**不会覆盖**已有配置文件。详见 **「安装 → Composer 插件」**。
+- **Composer 安装钩子**：本包为 **Composer 插件**（`composer-plugin`）。安装/更新时会读取 **`vendor/composer/installed.php`**、**`composer.lock`**、**`composer.json`**，并结合**目录结构**判断当前项目栈，再按各框架官方路径写入默认配置；未识别则跳过。**不会覆盖**已有配置文件。详见 **「安装 → Composer 插件」**。
 
 ---
 
@@ -57,9 +57,10 @@ composer require erikwang2013/encryptable
 
 本包为 `"type": "composer-plugin"`，通过 `extra.class` 注册 `Maize\Encryptable\Composer\Plugin`。在 **`erikwang2013/encryptable` 被安装或更新**后，插件会：
 
-1. 汇总根项目 **`composer.json`** 里 `require`、`require-dev` 的包名，以及 **`composer.lock`** 里 `packages`、`packages-dev` 的包名（统一小写比对）。
-2. **仅当识别到下方表格中的框架依赖时**才写入文件；目标文件已存在则**跳过**（不覆盖）。
-3. **未识别到任何支持框架**时只输出跳过说明，避免在纯 PHP 库里误建 `config/`。
+1. 按顺序汇总 Composer 包名（小写）：**`vendor/composer/installed.php`**（及 **`installed.json`**）、**`composer.lock`**、根 **`composer.json`** 的 `require` / `require-dev`。这样能反映 **`vendor` 里真实已安装** 的包（含传递依赖），避免根 `composer.json` 未写 `workerman/webman` 时误判。
+2. 若仍不足以判断，再结合**项目目录特征**（如 Webman：`support/bootstrap.php` 或 `start.php` / `windows.php` 且存在 `config/`；Laravel：`artisan` 与 `bootstrap/app.php` 等；Hyperf：`bin/hyperf.php` 或 `config/autoload/server.php`；ThinkPHP：根目录可执行文件 `think`）。
+3. **仅当识别到下方表格中的框架时**才写入文件；目标文件已存在则**不覆盖**。
+4. **仍无法识别**时只输出跳过说明，避免在纯 PHP 库里误建 `config/`。
 
 | 识别到的依赖（示例） | 遵循的官方约定 | 若缺失则创建的文件 |
 |----------------------|------------------|---------------------|
