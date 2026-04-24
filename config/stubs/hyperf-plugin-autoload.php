@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 /**
- * Hyperf：置于 {@code config/autoload/encryptable.php} 时，合并键为 {@code encryptable.*}（文件名即一级键名）。
+ * Hyperf：置于 {@code config/autoload/plugins/{vendor}/{package}.php}，
+ * 合并键为 {@code plugins.{vendor}.{package}.*}。
  *
  * @see https://hyperf.wiki/en/config.html
  */

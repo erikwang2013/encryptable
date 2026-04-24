@@ -38,10 +38,10 @@ Composer 包名：**[erikwang2013/encryptable](https://packagist.org/packages/er
 
 | 框架 | 版本（约定） | 接入方式 | Eloquent `$casts`（`Encryptable`） | `Encryption::php()` | `Encryption::db()` | `UniqueEncrypted` / `ExistsEncrypted` 与宏 |
 |------|----------------|----------|-----------------------------------|---------------------|---------------------|---------------------------------------------|
-| **Laravel** | 10.x ~ 12.x（运行环境 PHP ≥ 8.2） | Composer 包发现注册 `EncryptableServiceProvider` | ✓ | ✓ | ✓ | ✓ |
-| **Webman** | 1.x / 2.x，且项目已引入 **Illuminate**（database / support / validation） | 注册 `EncryptableServiceProvider` + 按安装节复制配置 | ✓（使用 Eloquent 时） | ✓ | ✓ | ✓ |
-| **Hyperf** | 2.x / 3.x | `extra.hyperf.config` 合并 `Bridge\Hyperf\ConfigProvider` + 按安装节复制 Hyperf 专用配置 | —（非 Laravel 模型 Cast；可在实体/仓储中调用 `Encryption::php()`） | ✓ | ✓（需安装 `hyperf/db-connection`） | —（依赖 Illuminate 校验栈） |
-| **ThinkPHP** | 6.x ~ 8.x | `ThinkphpEncryptable::register($app)` + 按安装节复制配置 | —（请用模型获取器/修改器或类型字段自行调用 `Encryption::php()`） | ✓ | ✓ | — |
+| **Laravel** | 10.x ~ 12.x（运行环境 PHP ≥ 8.2） | Composer 包发现注册 `EncryptableServiceProvider` + **`config/plugin/erikwang2013/encryptable/app.php`**（或旧版 `config/encryptable.php`） | ✓ | ✓ | ✓ | ✓ |
+| **Webman** | 1.x / 2.x，且项目已引入 **Illuminate**（database / support / validation） | 注册 `EncryptableServiceProvider` + **`config/plugin/erikwang2013/encryptable/app.php`**（Composer 插件或手动） | ✓（使用 Eloquent 时） | ✓ | ✓ | ✓ |
+| **Hyperf** | 2.x / 3.x | `extra.hyperf.config` 合并 `Bridge\Hyperf\ConfigProvider` + **`config/autoload/plugins/erikwang2013/encryptable.php`**（或旧版 `config/autoload/encryptable.php`） | —（非 Laravel 模型 Cast；可在实体/仓储中调用 `Encryption::php()`） | ✓ | ✓（需安装 `hyperf/db-connection`） | —（依赖 Illuminate 校验栈） |
+| **ThinkPHP** | 6.x ~ 8.x | `ThinkphpEncryptable::register($app)` + **`config/plugin/erikwang2013/encryptable/app.php`**（或旧版 `config/encryptable.php`） | —（请用模型获取器/修改器或类型字段自行调用 `Encryption::php()`） | ✓ | ✓ | — |
 
 **图例：** ✓ 表示该能力在本栈有官方桥接或可直接使用；**—** 表示本包未提供该栈的专用实现，需自行在业务层对接。
 
@@ -64,12 +64,12 @@ composer require erikwang2013/encryptable
 
 | 识别到的依赖（示例） | 遵循的官方约定 | 若缺失则创建的文件 |
 |----------------------|------------------|---------------------|
-| `laravel/framework` 或 `laravel/lumen-framework` | [Laravel 配置](https://laravel.com/docs/configuration) — 根目录 `config/` 下 PHP 配置 | `config/encryptable.php`（扁平 `key` / `cipher`，对应 `config('encryptable.*')`） |
-| `workerman/webman` | [Webman 配置](https://www.workerman.net/doc/webman/config.html) — `config/*.php` | `config/encryptable.php` |
-| `topthink/framework` 或 `topthink/think` | [ThinkPHP 8 配置文件](https://doc.thinkphp.cn/v8_0/config_file.html) — 应用 `config/` | `config/encryptable.php` |
-| `hyperf/framework` 或 `hyperf/hyperf` | [Hyperf 配置](https://hyperf.wiki/zh-cn/config.html) — `config/autoload/` 合并配置 | `config/autoload/encryptable.php`（stub 内为 `['encryptable' => [...]]`） |
+| `laravel/framework` 或 `laravel/lumen-framework` | [Laravel 配置](https://laravel.com/docs/configuration) — `config/` 下 PHP（本包与 Webman 共用同一物理插件路径） | `config/plugin/erikwang2013/encryptable/app.php`（由 `EncryptableServiceProvider` 合并为 `config('encryptable.*')`） |
+| `workerman/webman` / `webman/*` | [Webman 插件](https://webman.workerman.net/doc/zh-cn/plugin/create.html) — `config/plugin/{vendor}/{name}/app.php` | `config/plugin/erikwang2013/encryptable/app.php`（`config('plugin.erikwang2013.encryptable.app.*')`） |
+| `topthink/framework` 或 `topthink/think` | [ThinkPHP 8 配置文件](https://doc.thinkphp.cn/v8_0/config_file.html) — 应用 `config/`；本包采用插件式子路径 | `config/plugin/erikwang2013/encryptable/app.php`（在 `ThinkphpEncryptable::register` 中注入为 `encryptable.*`） |
+| `hyperf/framework` 或 `hyperf/hyperf` | [Hyperf 配置](https://hyperf.wiki/zh-cn/config.html) — `config/autoload/` 下 PHP（相对路径映射为点号键） | `config/autoload/plugins/erikwang2013/encryptable.php`（`plugins.erikwang2013.encryptable.*`，见 `HyperfEncryptableConfig`） |
 
-**仅 Hyperf** 时只发布 **`config/autoload/encryptable.php`**，不发布根级 `config/encryptable.php`。若同时识别多种栈（如单体仓库），则对每种缺失文件分别发布。
+**Laravel / Lumen / ThinkPHP / Webman** 共用 **`config/plugin/erikwang2013/encryptable/app.php`**（模板 `config/stubs/plugin-app.php`）。**Hyperf** 在新装且不存在旧版 **`config/autoload/encryptable.php`** 时写入 **`config/autoload/plugins/erikwang2013/encryptable.php`**；已有旧路径的项目保持不变，`HyperfEncryptableConfig` **优先**读插件路径，再回退 **`encryptable.*`**。若同时识别多种栈（如单体仓库），则对每种缺失文件分别发布。
 
 **Composer 2.2+** 默认可能拦截插件，需在业务项目的 `composer.json` 中允许本包（配置一次即可；若已拒绝过可删 `composer.lock` 后重试或手动加）：
 
@@ -89,24 +89,26 @@ composer require erikwang2013/encryptable
 
 | 框架 | 复制源（vendor 内路径，包名以 `erikwang2013/encryptable` 为准） | 复制到（项目内目标路径） |
 |------|------------------------------------------------------------------|--------------------------|
-| **Laravel** | `vendor/erikwang2013/encryptable/config/encryptable.php` | `config/encryptable.php` |
-| **Webman** | 同上 | `config/encryptable.php` |
-| **ThinkPHP** | 同上 | `config/encryptable.php` |
-| **Hyperf** | `vendor/erikwang2013/encryptable/config/stubs/hyperf-autoload-encryptable.php` | `config/autoload/encryptable.php` |
+| **Laravel / Lumen / ThinkPHP / Webman** | `vendor/erikwang2013/encryptable/config/stubs/plugin-app.php` | `config/plugin/erikwang2013/encryptable/app.php` |
+| **Laravel（可选旧版）** | `vendor/erikwang2013/encryptable/config/encryptable.php` | `config/encryptable.php`（无插件路径时仍会被合并） |
+| **Hyperf（推荐）** | `vendor/erikwang2013/encryptable/config/stubs/hyperf-plugin-autoload.php` | `config/autoload/plugins/erikwang2013/encryptable.php` |
+| **Hyperf（旧版）** | `vendor/erikwang2013/encryptable/config/stubs/hyperf-autoload-encryptable.php` | `config/autoload/encryptable.php`（顶层 `key` / `cipher` → `encryptable.*`） |
 
-> **说明：** Laravel / Webman / ThinkPHP 使用同一份扁平模板 `config/encryptable.php`（顶层即 `key`、`cipher`）。Hyperf 的 `HyperfEncryptableConfig` 读取的是 `encryptable.key` / `encryptable.cipher`，因此必须使用 `config/stubs/hyperf-autoload-encryptable.php` 中带 **`encryptable` 分组** 的写法，**不要**直接把 Laravel 用扁平数组的那份文件拷成 `config/autoload/encryptable.php` 而不包一层 `encryptable` 键。
+> **说明：** **`plugin-app.php`** 为共用 stub（顶层 `key`、`cipher`）。**Webman** 原生读取为 `plugin.erikwang2013.encryptable.app.*`。**Laravel / Lumen** 合并到 `encryptable.*`。**ThinkPHP** 在 `ThinkphpEncryptable::register` 中注入为 `encryptable.*`。**Hyperf** 中 autoload 文件名与相对路径决定键名：推荐路径对应 **`plugins.erikwang2013.encryptable.*`**；旧文件 `encryptable.php` 对应 **`encryptable.*`**。
 
 **Shell 示例：**
 
 ```bash
-# Laravel / Webman / ThinkPHP
-cp vendor/erikwang2013/encryptable/config/encryptable.php config/encryptable.php
+# Laravel / Lumen / ThinkPHP / Webman（共用插件布局）
+mkdir -p config/plugin/erikwang2013/encryptable
+cp vendor/erikwang2013/encryptable/config/stubs/plugin-app.php config/plugin/erikwang2013/encryptable/app.php
 
-# Hyperf
-cp vendor/erikwang2013/encryptable/config/stubs/hyperf-autoload-encryptable.php config/autoload/encryptable.php
+# Hyperf（推荐）
+mkdir -p config/autoload/plugins/erikwang2013
+cp vendor/erikwang2013/encryptable/config/stubs/hyperf-plugin-autoload.php config/autoload/plugins/erikwang2013/encryptable.php
 ```
 
-Laravel 也可改用发布命令（与手动复制到 `config/encryptable.php` 等价）：
+Laravel 也可使用 `vendor:publish`（会发布插件路径、可选旧版扁平文件及 Hyperf stub 路径）：
 
 ```bash
 php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvider" --tag="encryptable-config"
@@ -114,23 +116,25 @@ php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvi
 
 ### Laravel（其余步骤）
 
-安装后若已启用包自动发现，会注册 `Maize\Encryptable\EncryptableServiceProvider`。完成上表 **Laravel** 行配置复制或执行 `vendor:publish` 即可。
+安装后若已启用包自动发现，会注册 `Maize\Encryptable\EncryptableServiceProvider`。请确保存在 **`config/plugin/erikwang2013/encryptable/app.php`**（Composer 钩子或上表 / `vendor:publish`），或仅保留旧版 **`config/encryptable.php`**。
 
 ### Webman（使用 Illuminate 组件时）
 
-按需安装 `illuminate/database`、`illuminate/support`、`illuminate/validation` 等，完成上表 **Webman** 行配置复制后，在插件或启动流程中注册：
+按需安装 `illuminate/database`、`illuminate/support`、`illuminate/validation` 等。确保存在 **`config/plugin/erikwang2013/encryptable/app.php`**（Composer 安装钩子或 `vendor:publish` 会生成），然后在插件或启动流程中注册：
 
 `Maize\Encryptable\EncryptableServiceProvider`
 
+运行时读取 **`config('plugin.erikwang2013.encryptable.app.key')`** 与 **`.cipher`**，见 [Webman 插件配置说明](https://webman.workerman.net/doc/zh-cn/plugin/create.html)。
+
 ### Hyperf
 
-1. 完成上表 **Hyperf** 行配置复制。
+1. 按上表复制或依赖安装钩子生成 **`config/autoload/plugins/erikwang2013/encryptable.php`**（或旧版 **`config/autoload/encryptable.php`**）。读取顺序为 **`plugins.erikwang2013.encryptable.*`**，再回退 **`encryptable.*`**。
 2. 本包在 `composer.json` 的 `extra.hyperf.config` 中声明了 `Maize\Encryptable\Bridge\Hyperf\ConfigProvider`，由 Hyperf 合并依赖注入配置。
 3. 若使用 `Encryption::db()`，请安装 **`hyperf/db-connection`**。
 
 ### ThinkPHP
 
-1. 完成上表 **ThinkPHP** 行配置复制。
+1. 推荐 **`config/plugin/erikwang2013/encryptable/app.php`**（与 Webman/Laravel 相同 stub）。若仍使用旧版 **`config/encryptable.php`** 亦可。
 2. 在应用启动阶段（例如服务注册或引导类中）调用：
 
 ```php
@@ -141,7 +145,7 @@ php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvi
 
 ## 配置说明
 
-复制或发布得到 `config/encryptable.php`（或 Hyperf 下 `config/autoload/encryptable.php` 内 `encryptable` 段）后，核心项为：
+复制或发布得到 **`config/plugin/erikwang2013/encryptable/app.php`**、旧版 **`config/encryptable.php`**，或 Hyperf 下 **`config/autoload/plugins/erikwang2013/encryptable.php`** / **`config/autoload/encryptable.php`** 后，核心项为：
 
 | 键 | 说明 |
 |----|------|

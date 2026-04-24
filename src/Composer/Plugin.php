@@ -10,6 +10,7 @@ use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginInterface;
+use Maize\Encryptable\Support\PackagePluginPaths;
 
 /**
  * Publishes default config files following each supported framework's official layout.
@@ -21,14 +22,12 @@ use Composer\Plugin\PluginInterface;
  * 4) Project filesystem heuristics (Webman {@code support/bootstrap.php}, Laravel {@code artisan}, Hyperf {@code bin/hyperf.php}, ThinkPHP {@code think}, …)
  *
  * @see https://laravel.com/docs/configuration
- * @see https://www.workerman.net/doc/webman/config.html
+ * @see https://webman.workerman.net/doc/en/plugin/create.html
  * @see https://doc.thinkphp.cn/v8_0/config_file.html
  * @see https://hyperf.wiki/en/config.html
  */
 final class Plugin implements PluginInterface, EventSubscriberInterface
 {
-    private const PACKAGE_NAME = 'erikwang2013/encryptable';
-
     public function activate(Composer $composer, IOInterface $io): void
     {
     }
@@ -59,7 +58,7 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
             $package = $operation->getTargetPackage();
         }
 
-        if ($package === null || $package->getName() !== self::PACKAGE_NAME) {
+        if ($package === null || $package->getName() !== PackagePluginPaths::COMPOSER_NAME) {
             return;
         }
 
@@ -83,8 +82,8 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         }
 
         $projectRoot = dirname($vendorReal);
-        $mainSource = $installPath.'/config/encryptable.php';
-        $hyperfStub = $installPath.'/config/stubs/hyperf-autoload-encryptable.php';
+        $pluginAppStub = $installPath.'/config/stubs/plugin-app.php';
+        $hyperfPluginStub = $installPath.'/config/stubs/hyperf-plugin-autoload.php';
 
         $names = $this->collectPackageNamesLowercase($projectRoot);
         $fs = $this->inferFrameworkFromFilesystem($projectRoot);
@@ -102,24 +101,47 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
             || isset($names['topthink/think'])
             || $fs['thinkphp'];
 
-        $publishFlat = $laravel || $lumen || $webman || $thinkphp;
-        $publishHyperfAutoload = $hyperf;
+        $publishPluginApp = $webman || $laravel || $lumen || $thinkphp;
+        $publishHyperfPlugin = $hyperf;
 
-        if (! $publishFlat && ! $publishHyperfAutoload) {
+        if (! $publishPluginApp && ! $publishHyperfPlugin) {
             $io->write(sprintf(
                 '<comment>[%s]</comment> Skipped auto config: no supported framework detected (checked vendor/composer/installed.php|.json, composer.lock, composer.json, and project layout). Copy files manually (see README).',
-                self::PACKAGE_NAME
+                PackagePluginPaths::COMPOSER_NAME
             ));
 
             return;
         }
 
-        if ($publishHyperfAutoload && is_readable($hyperfStub)) {
-            $this->publishHyperfAutoloadConfig($projectRoot, $hyperfStub, $io);
+        if ($publishHyperfPlugin && is_readable($hyperfPluginStub)) {
+            $this->publishHyperfPluginAutoloadConfig($projectRoot, $hyperfPluginStub, $io);
         }
 
-        if ($publishFlat && is_readable($mainSource)) {
-            $this->publishFlatConfig($projectRoot, $mainSource, $io, $laravel, $lumen, $webman, $thinkphp);
+        if ($publishPluginApp && is_readable($pluginAppStub)) {
+            $created = $this->ensurePluginAppPhp($projectRoot, $pluginAppStub, $io);
+            if ($created) {
+                $labels = [];
+                if ($webman) {
+                    $labels[] = 'Webman';
+                }
+                if ($laravel) {
+                    $labels[] = 'Laravel';
+                }
+                if ($lumen) {
+                    $labels[] = 'Lumen';
+                }
+                if ($thinkphp) {
+                    $labels[] = 'ThinkPHP';
+                }
+                [$vendor, $plugin] = PackagePluginPaths::splitVendorPackage();
+                $io->write(sprintf(
+                    '<info>[%s]</info> Installed plugin config <comment>config/plugin/%s/%s/app.php</comment> (%s — same layout as Webman plugins; see README)',
+                    PackagePluginPaths::COMPOSER_NAME,
+                    $vendor,
+                    $plugin,
+                    $labels !== [] ? implode(' + ', $labels) : 'PHP'
+                ));
+            }
         }
     }
 
@@ -241,76 +263,64 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         ];
     }
 
-    private function publishHyperfAutoloadConfig(string $projectRoot, string $hyperfStub, IOInterface $io): void
+    /**
+     * Hyperf：{@code config/autoload} 下相对路径生成点号键；新装使用 {@code plugins/{vendor}/{package}.php}。
+     * 若项目已存在旧版 {@code config/autoload/encryptable.php}，则不再写入新路径以免重复配置。
+     */
+    private function publishHyperfPluginAutoloadConfig(string $projectRoot, string $hyperfPluginStub, IOInterface $io): void
     {
+        [$vendor, $plugin] = PackagePluginPaths::splitVendorPackage();
         $autoloadDir = $projectRoot.'/config/autoload';
-        if (! is_dir($autoloadDir) && ! @mkdir($autoloadDir, 0775, true) && ! is_dir($autoloadDir)) {
-            $io->writeError(sprintf('<error>[%s]</error> Could not create Hyperf config directory: %s', self::PACKAGE_NAME, $autoloadDir));
+        $pluginDir = $autoloadDir.'/plugins/'.$vendor;
+        $newTarget = $pluginDir.'/'.$plugin.'.php';
+        $legacyTarget = $autoloadDir.'/encryptable.php';
+
+        if (file_exists($newTarget) || file_exists($legacyTarget)) {
+            return;
+        }
+
+        if (! is_dir($pluginDir) && ! @mkdir($pluginDir, 0775, true) && ! is_dir($pluginDir)) {
+            $io->writeError(sprintf('<error>[%s]</error> Could not create Hyperf plugin config directory: %s', PackagePluginPaths::COMPOSER_NAME, $pluginDir));
 
             return;
         }
 
-        $target = $autoloadDir.'/encryptable.php';
-        if (file_exists($target)) {
-            return;
-        }
-
-        if (@copy($hyperfStub, $target)) {
+        if (@copy($hyperfPluginStub, $newTarget)) {
             $io->write(sprintf(
-                '<info>[%s]</info> Installed Hyperf merge config: <comment>config/autoload/encryptable.php</comment> (see https://hyperf.wiki/en/config.html)',
-                self::PACKAGE_NAME
+                '<info>[%s]</info> Installed Hyperf plugin config: <comment>config/autoload/plugins/%s/%s.php</comment> (see https://hyperf.wiki/en/config.html)',
+                PackagePluginPaths::COMPOSER_NAME,
+                $vendor,
+                $plugin
             ));
         } else {
-            $io->writeError(sprintf('<error>[%s]</error> Failed to copy Hyperf config to %s', self::PACKAGE_NAME, $target));
+            $io->writeError(sprintf('<error>[%s]</error> Failed to copy Hyperf plugin config to %s', PackagePluginPaths::COMPOSER_NAME, $newTarget));
         }
     }
 
-    private function publishFlatConfig(
-        string $projectRoot,
-        string $mainSource,
-        IOInterface $io,
-        bool $laravel,
-        bool $lumen,
-        bool $webman,
-        bool $thinkphp
-    ): void {
-        $configDir = $projectRoot.'/config';
-        if (! is_dir($configDir) && ! @mkdir($configDir, 0775, true) && ! is_dir($configDir)) {
-            $io->writeError(sprintf('<error>[%s]</error> Could not create config directory: %s', self::PACKAGE_NAME, $configDir));
+    /**
+     * @return bool true if the file was created in this run
+     */
+    private function ensurePluginAppPhp(string $projectRoot, string $sourceStub, IOInterface $io): bool
+    {
+        [$vendor, $plugin] = PackagePluginPaths::splitVendorPackage();
+        $targetDir = $projectRoot.'/config/plugin/'.$vendor.'/'.$plugin;
+        if (! is_dir($targetDir) && ! @mkdir($targetDir, 0775, true) && ! is_dir($targetDir)) {
+            $io->writeError(sprintf('<error>[%s]</error> Could not create plugin config directory: %s', PackagePluginPaths::COMPOSER_NAME, $targetDir));
 
-            return;
+            return false;
         }
 
-        $target = $configDir.'/encryptable.php';
+        $target = $targetDir.'/app.php';
         if (file_exists($target)) {
-            return;
+            return false;
         }
 
-        if (! @copy($mainSource, $target)) {
-            $io->writeError(sprintf('<error>[%s]</error> Failed to copy config to %s', self::PACKAGE_NAME, $target));
+        if (! @copy($sourceStub, $target)) {
+            $io->writeError(sprintf('<error>[%s]</error> Failed to copy plugin config to %s', PackagePluginPaths::COMPOSER_NAME, $target));
 
-            return;
-        }
-
-        $stack = [];
-        if ($laravel) {
-            $stack[] = 'Laravel';
-        }
-        if ($lumen) {
-            $stack[] = 'Lumen';
-        }
-        if ($webman) {
-            $stack[] = 'Webman';
-        }
-        if ($thinkphp) {
-            $stack[] = 'ThinkPHP';
+            return false;
         }
 
-        $label = $stack !== [] ? implode(' + ', $stack) : 'flat config';
-        $io->write(sprintf(
-            '<info>[%s]</info> Installed <comment>config/encryptable.php</comment> (%s — project <comment>config/</comment> per framework conventions)',
-            self::PACKAGE_NAME,
-            $label
-        ));
+        return true;
     }
 }

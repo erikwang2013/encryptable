@@ -38,10 +38,10 @@ The table below summarizes **expected compatibility**, how to wire the package, 
 
 | Framework | Version (expected) | Integration | Eloquent `$casts` (`Encryptable`) | `Encryption::php()` | `Encryption::db()` | `UniqueEncrypted` / `ExistsEncrypted` & macros |
 |-----------|--------------------|--------------|-------------------------------------|----------------------|---------------------|--------------------------------------------------|
-| **Laravel** | 10.x–12.x (PHP ≥ 8.2) | Package discovery registers `EncryptableServiceProvider` | ✓ | ✓ | ✓ | ✓ |
-| **Webman** | 1.x / 2.x with **Illuminate** (database / support / validation) | Register `EncryptableServiceProvider` + copy config per Installation | ✓ (when using Eloquent) | ✓ | ✓ | ✓ |
-| **Hyperf** | 2.x / 3.x | `extra.hyperf.config` merges `Bridge\Hyperf\ConfigProvider` + copy Hyperf-specific config | — (no Laravel cast; call `Encryption::php()` in entities/repos) | ✓ | ✓ (install `hyperf/db-connection`) | — (needs Illuminate validation stack) |
-| **ThinkPHP** | 6.x–8.x | `ThinkphpEncryptable::register($app)` + copy config | — (use accessors/mutators or types with `Encryption::php()`) | ✓ | ✓ | — |
+| **Laravel** | 10.x–12.x (PHP ≥ 8.2) | Package discovery registers `EncryptableServiceProvider` + **`config/plugin/erikwang2013/encryptable/app.php`** (or legacy `config/encryptable.php`) | ✓ | ✓ | ✓ | ✓ |
+| **Webman** | 1.x / 2.x with **Illuminate** (database / support / validation) | Register `EncryptableServiceProvider` + **`config/plugin/erikwang2013/encryptable/app.php`** (Composer plugin or manual) | ✓ (when using Eloquent) | ✓ | ✓ | ✓ |
+| **Hyperf** | 2.x / 3.x | `extra.hyperf.config` merges `Bridge\Hyperf\ConfigProvider` + **`config/autoload/plugins/erikwang2013/encryptable.php`** (or legacy `config/autoload/encryptable.php`) | — (no Laravel cast; call `Encryption::php()` in entities/repos) | ✓ | ✓ (install `hyperf/db-connection`) | — (needs Illuminate validation stack) |
+| **ThinkPHP** | 6.x–8.x | `ThinkphpEncryptable::register($app)` + **`config/plugin/erikwang2013/encryptable/app.php`** (or legacy `config/encryptable.php`) | — (use accessors/mutators or types with `Encryption::php()`) | ✓ | ✓ | — |
 
 **Legend:** ✓ = supported for this stack out of the box; — = not provided; integrate in your own layer.
 
@@ -64,12 +64,12 @@ This package has `"type": "composer-plugin"` and registers `Maize\Encryptable\Co
 
 | Detected dependency (examples) | Official layout we follow | File we create when missing |
 |--------------------------------|---------------------------|-----------------------------|
-| `laravel/framework` or `laravel/lumen-framework` | [Laravel configuration](https://laravel.com/docs/configuration) — PHP files under `config/` | `config/encryptable.php` (flat `key` / `cipher`, merged as `config('encryptable.*')`) |
-| `workerman/webman` | [Webman configuration](https://www.workerman.net/doc/webman/config.html) — `config/*.php` | `config/encryptable.php` |
-| `topthink/framework` or `topthink/think` | [ThinkPHP 8 config](https://doc.thinkphp.cn/v8_0/config_file.html) — project `config/` | `config/encryptable.php` |
-| `hyperf/framework` or `hyperf/hyperf` | [Hyperf config](https://hyperf.wiki/en/config.html) — merge configs in `config/autoload/` | `config/autoload/encryptable.php` (stub returns `['encryptable' => [...]]`) |
+| `laravel/framework` or `laravel/lumen-framework` | [Laravel configuration](https://laravel.com/docs/configuration) — PHP under `config/` (same physical layout as Webman plugins for this package) | `config/plugin/erikwang2013/encryptable/app.php` (merged as `config('encryptable.*')` via `EncryptableServiceProvider`) |
+| `workerman/webman` / `webman/*` | [Webman plugins](https://webman.workerman.net/doc/en/plugin/create.html) — `config/plugin/{vendor}/{name}/app.php` | `config/plugin/erikwang2013/encryptable/app.php` (`config('plugin.erikwang2013.encryptable.app.*')`) |
+| `topthink/framework` or `topthink/think` | [ThinkPHP 8 config](https://doc.thinkphp.cn/v8_0/config_file.html) — project `config/`; plugin-style path for this package | `config/plugin/erikwang2013/encryptable/app.php` (injected as `encryptable.*` when you call `ThinkphpEncryptable::register`) |
+| `hyperf/framework` or `hyperf/hyperf` | [Hyperf config](https://hyperf.wiki/en/config.html) — merge PHP files under `config/autoload/` (relative path becomes dot keys) | `config/autoload/plugins/erikwang2013/encryptable.php` (`plugins.erikwang2013.encryptable.*`; see `HyperfEncryptableConfig`) |
 
-**Hyperf-only** projects get **`config/autoload/encryptable.php` only** (no `config/encryptable.php`). **Laravel / Lumen / Webman / ThinkPHP** get **`config/encryptable.php`**. If multiple stacks match (e.g. a monorepo), every applicable file is created when missing.
+**Laravel / Lumen / ThinkPHP / Webman** share the same **`config/plugin/erikwang2013/encryptable/app.php`** template (`config/stubs/plugin-app.php`). **Hyperf** uses **`config/autoload/plugins/erikwang2013/encryptable.php`** when neither that file nor the legacy **`config/autoload/encryptable.php`** exists yet (legacy installs keep working; `HyperfEncryptableConfig` reads the plugin path first, then `encryptable.*`). If multiple stacks match (e.g. a monorepo), every applicable file is created when missing.
 
 **Composer 2.2+** may block plugins until you allow them. Add this to your application `composer.json` (once), then run `composer require` again if needed:
 
@@ -89,24 +89,26 @@ If the plugin is blocked or you manage config in VCS templates yourself, **copy 
 
 | Framework | Source inside `vendor` (package `erikwang2013/encryptable`) | Destination in your project |
 |-----------|--------------------------------------------------------------|------------------------------|
-| **Laravel** | `vendor/erikwang2013/encryptable/config/encryptable.php` | `config/encryptable.php` |
-| **Webman** | same as above | `config/encryptable.php` |
-| **ThinkPHP** | same as above | `config/encryptable.php` |
-| **Hyperf** | `vendor/erikwang2013/encryptable/config/stubs/hyperf-autoload-encryptable.php` | `config/autoload/encryptable.php` |
+| **Laravel / Lumen / ThinkPHP / Webman** | `vendor/erikwang2013/encryptable/config/stubs/plugin-app.php` | `config/plugin/erikwang2013/encryptable/app.php` |
+| **Laravel (legacy, optional)** | `vendor/erikwang2013/encryptable/config/encryptable.php` | `config/encryptable.php` (still merged by `EncryptableServiceProvider` if present and plugin file is absent) |
+| **Hyperf (recommended)** | `vendor/erikwang2013/encryptable/config/stubs/hyperf-plugin-autoload.php` | `config/autoload/plugins/erikwang2013/encryptable.php` |
+| **Hyperf (legacy)** | `vendor/erikwang2013/encryptable/config/stubs/hyperf-autoload-encryptable.php` | `config/autoload/encryptable.php` (top-level `key` / `cipher` → `encryptable.*`) |
 
-> **Note:** Laravel / Webman / ThinkPHP share the **flat** template `config/encryptable.php` (top-level `key`, `cipher`). `HyperfEncryptableConfig` reads `encryptable.key` / `encryptable.cipher`, so you **must** use the stub that wraps settings under an **`encryptable`** key. Do **not** copy the flat Laravel file into `config/autoload/encryptable.php` without that wrapper.
+> **Note:** **`plugin-app.php`** is the shared stub (top-level `key`, `cipher`). **Webman** reads it natively as `plugin.erikwang2013.encryptable.app.*`. **Laravel / Lumen** merge it into `encryptable.*`. **ThinkPHP** loads it in `ThinkphpEncryptable::register` into `encryptable.*`. **Hyperf** autoload files are keyed by path: the recommended file maps to **`plugins.erikwang2013.encryptable.*`**; the legacy filename `encryptable.php` maps to **`encryptable.*`**.
 
 **Shell examples:**
 
 ```bash
-# Laravel / Webman / ThinkPHP
-cp vendor/erikwang2013/encryptable/config/encryptable.php config/encryptable.php
+# Laravel / Lumen / ThinkPHP / Webman (shared plugin layout)
+mkdir -p config/plugin/erikwang2013/encryptable
+cp vendor/erikwang2013/encryptable/config/stubs/plugin-app.php config/plugin/erikwang2013/encryptable/app.php
 
-# Hyperf
-cp vendor/erikwang2013/encryptable/config/stubs/hyperf-autoload-encryptable.php config/autoload/encryptable.php
+# Hyperf (recommended)
+mkdir -p config/autoload/plugins/erikwang2013
+cp vendor/erikwang2013/encryptable/config/stubs/hyperf-plugin-autoload.php config/autoload/plugins/erikwang2013/encryptable.php
 ```
 
-Laravel alternative (equivalent to copying into `config/encryptable.php`):
+Laravel alternative (`vendor:publish` publishes the plugin file, optional legacy flat file, and the Hyperf stub path for convenience):
 
 ```bash
 php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvider" --tag="encryptable-config"
@@ -114,25 +116,25 @@ php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvi
 
 ### Laravel (remaining steps)
 
-With package auto-discovery enabled, `Maize\Encryptable\EncryptableServiceProvider` is registered. Finish either the **Laravel** row in the table above or run `vendor:publish`.
+With package auto-discovery enabled, `Maize\Encryptable\EncryptableServiceProvider` is registered. Ensure **`config/plugin/erikwang2013/encryptable/app.php`** exists (Composer plugin or **Laravel** row / `vendor:publish`), or keep a legacy **`config/encryptable.php`** only.
 
 ### Webman (with Illuminate)
 
-Install `illuminate/database`, `illuminate/support`, `illuminate/validation`, etc. as needed. After copying config for **Webman**, register:
+Install `illuminate/database`, `illuminate/support`, `illuminate/validation`, etc. as needed. Ensure the plugin config exists at **`config/plugin/erikwang2013/encryptable/app.php`** (the Composer plugin or `vendor:publish` creates it). Then register:
 
 `Maize\Encryptable\EncryptableServiceProvider`
 
-in your plugin/bootstrap code.
+in your plugin/bootstrap code. Runtime reads **`config('plugin.erikwang2013.encryptable.app.key')`** and **`.cipher`**, per [Webman plugin config rules](https://webman.workerman.net/doc/en/plugin/create.html).
 
 ### Hyperf
 
-1. Copy config per the **Hyperf** row in the table.
+1. Copy or auto-install config per the **Hyperf** row (`config/autoload/plugins/erikwang2013/encryptable.php`, or legacy `config/autoload/encryptable.php`). Values are read as **`plugins.erikwang2013.encryptable.key`** / **`.cipher`**, with fallback to **`encryptable.*`**.
 2. This package declares `Maize\Encryptable\Bridge\Hyperf\ConfigProvider` under `composer.json` → `extra.hyperf.config` for Hyperf to merge.
 3. For `Encryption::db()`, install **`hyperf/db-connection`**.
 
 ### ThinkPHP
 
-1. Copy config per the **ThinkPHP** row.
+1. Prefer **`config/plugin/erikwang2013/encryptable/app.php`** (same stub as Webman/Laravel). Legacy **`config/encryptable.php`** still works if you do not use the plugin path.
 2. During application bootstrap (e.g. service registration), call:
 
 ```php
@@ -143,7 +145,7 @@ in your plugin/bootstrap code.
 
 ## Configuration
 
-After copying or publishing `config/encryptable.php` (or the `encryptable` section inside Hyperf’s `config/autoload/encryptable.php`), the main keys are:
+After copying or publishing **`config/plugin/erikwang2013/encryptable/app.php`**, legacy **`config/encryptable.php`**, or Hyperf’s **`config/autoload/plugins/erikwang2013/encryptable.php`** / **`config/autoload/encryptable.php`**, the main keys are:
 
 | Key | Description |
 |-----|-------------|
