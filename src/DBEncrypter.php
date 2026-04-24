@@ -54,8 +54,13 @@ class DBEncrypter extends Encrypter
     {
         $cipher = $this->getEncryptionCipher();
 
+        $dash = strrpos($cipher, '-');
+        if ($dash === false) {
+            return $cipher;
+        }
+
         $algorithm = strstr($cipher, '-', true) ?: $cipher;
-        $mode = substr($cipher, strrpos($cipher, '-') + 1);
+        $mode = substr($cipher, $dash + 1);
 
         return "{$algorithm}-{$mode}";
     }

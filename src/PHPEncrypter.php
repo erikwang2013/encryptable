@@ -56,6 +56,10 @@ class PHPEncrypter extends Encrypter
 
     public function isEncrypted($value): bool
     {
+        if (! is_string($value)) {
+            return false;
+        }
+
         try {
             $value = $this->base64Decode($value);
 

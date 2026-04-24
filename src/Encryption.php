@@ -80,6 +80,9 @@ class Encryption
             if ($app instanceof ContainerInterface && $app->has($abstract)) {
                 return $app->get($abstract);
             }
+            if (is_object($app) && method_exists($app, 'bound') && method_exists($app, 'make') && $app->bound($abstract)) {
+                return $app->make($abstract);
+            }
         }
 
         if (self::$container !== null && self::$container->has($abstract)) {

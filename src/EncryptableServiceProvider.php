@@ -42,11 +42,9 @@ class EncryptableServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                dirname(__DIR__).'/config/encryptable.php' => config_path('encryptable.php'),
-            ], 'encryptable-config');
-        }
+        $this->publishes([
+            dirname(__DIR__).'/config/encryptable.php' => config_path('encryptable.php'),
+        ], 'encryptable-config');
 
         Rule::macro(
             'uniqueEncrypted',

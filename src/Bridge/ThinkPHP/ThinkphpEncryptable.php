@@ -30,8 +30,10 @@ class ThinkphpEncryptable
             );
         });
 
-        if ($app instanceof ContainerInterface) {
-            Encryption::setContainer($app);
-        }
+        $psr = $app instanceof ContainerInterface
+            ? $app
+            : new ThinkPsrContainerAdapter($app);
+
+        Encryption::setContainer($psr);
     }
 }
