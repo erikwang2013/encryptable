@@ -188,6 +188,42 @@ php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvi
 | Webman 插件 `app.php` | 同上；框架侧读取路径为 `plugin.*.app.*` |
 | Hyperf autoload 模板 | `key`、`cipher`、`previous_keys`（推荐 `plugins.erikwang2013.encryptable.*` 或旧版 `encryptable.*`） |
 
+#### 多个旧密钥怎么配
+
+解密顺序固定为：**先用当前主密钥 `ENCRYPTION_KEY`**，不成功再按 **`previous_keys` 数组顺序**依次尝试。有多枚旧钥时，建议把**最近刚下线的主密钥**排在最前，更早的排在后面。
+
+**方式一：环境变量 `ENCRYPTION_PREVIOUS_KEYS`**
+
+- **英文逗号分隔**（每项首尾空格会被去掉）：
+
+```env
+ENCRYPTION_PREVIOUS_KEYS=oldKeyOne16bytes!!,olderKeyTwo16byte,ancientKeyThree16b
+```
+
+- **JSON 数组**（整段写在 `.env` 一行；若某枚密钥里可能含逗号，优先用这种方式）：
+
+```env
+ENCRYPTION_PREVIOUS_KEYS=["oldKeyOne16bytes!!","olderKeyTwo16byte","ancientKeyThree16b"]
+```
+
+**方式二：Laravel / ThinkPHP 合并配置 `encryptable.previous_keys`**
+
+在 `config/encryptable.php` 或插件 `app.php` 里写 PHP 数组（顺序即尝试顺序；须与当前 `cipher` 要求的长度一致，例如 `aes-128-ecb` 常见为 **16 字符**）：
+
+```php
+'previous_keys' => [
+    'oldKeyOne16bytes!!',
+    'olderKeyTwo16byte',
+    'ancientKeyThree16b',
+],
+```
+
+包内默认也可用 **`PreviousKeysParser::parse(env('ENCRYPTION_PREVIOUS_KEYS'))`**，与方式一组合：环境变量里放多枚，由解析器转成数组。
+
+**方式三：Webman `app.php`、Hyperf autoload**
+
+字段名同样是 **`previous_keys`**：要么与方式二相同的 **PHP 数组**，要么 `PreviousKeysParser::parse(env('ENCRYPTION_PREVIOUS_KEYS'))`，与英文文档一致。
+
 ---
 
 ## 使用说明

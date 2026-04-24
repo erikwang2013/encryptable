@@ -188,6 +188,42 @@ You can **change the primary encryption key without taking the app offline for a
 | Webman plugin `app.php` | `key`, `cipher`, `previous_keys` (same shape; Webman reads `plugin.*.app.*`) |
 | Hyperf autoload stubs | `key`, `cipher`, `previous_keys` under `plugins.erikwang2013.encryptable.*` or legacy `encryptable.*` |
 
+#### Multiple previous keys (how to configure)
+
+Decrypt order is always: **current primary `ENCRYPTION_KEY` first**, then `previous_keys` **in list order** (put the key you retired **most recently** before older ones, so the common “last rotation” case is tried early).
+
+**1 — Environment variable (several retirees)**
+
+- **Comma-separated** (no spaces required, but trims are applied):
+
+```env
+ENCRYPTION_PREVIOUS_KEYS=oldKeyOne16bytes!!,olderKeyTwo16byte,ancientKeyThree16b
+```
+
+- **JSON array** (one line in `.env`; use this if a key might contain a comma):
+
+```env
+ENCRYPTION_PREVIOUS_KEYS=["oldKeyOne16bytes!!","olderKeyTwo16byte","ancientKeyThree16b"]
+```
+
+**2 — Laravel / ThinkPHP merged config (`encryptable.previous_keys`)**
+
+PHP array (same order semantics as above). Each string must match the **same length OpenSSL expects** for your `cipher` (e.g. `aes-128-ecb` typically uses a **16-byte** secret string).
+
+```php
+'previous_keys' => [
+    'oldKeyOne16bytes!!',
+    'olderKeyTwo16byte',
+    'ancientKeyThree16b',
+],
+```
+
+Or reuse the parser from env in `config/encryptable.php` / plugin `app.php` (already the default): `PreviousKeysParser::parse(env('ENCRYPTION_PREVIOUS_KEYS'))`.
+
+**3 — Webman plugin `app.php` / Hyperf autoload**
+
+Use the same `previous_keys` key as in the stubs: either a **PHP array** as above, or `PreviousKeysParser::parse(env('ENCRYPTION_PREVIOUS_KEYS'))`.
+
 ---
 
 ## Usage
