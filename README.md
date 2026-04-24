@@ -29,14 +29,14 @@ Composer 包名：**[erikwang2013/encryptable](https://packagist.org/packages/er
 
 ## 支持的框架
 
-下表说明各栈的**约定兼容范围**、接入方式，以及本包能力与 Laravel 专属能力（Eloquent Cast、基于 `illuminate/validation` 的规则）的对应关系。实际以你项目锁定的 PHP / 框架小版本为准。
+下表说明各栈的**约定兼容范围**、接入方式，以及本包能力与 Laravel 专属能力（Eloquent Cast、基于 `illuminate/validation` 的规则）的对应关系。实际以你项目锁定的 PHP / 框架小版本为准。**配置文件请按下文「安装 → 配置文件」表格复制到对应目录。**
 
 | 框架 | 版本（约定） | 接入方式 | Eloquent `$casts`（`Encryptable`） | `Encryption::php()` | `Encryption::db()` | `UniqueEncrypted` / `ExistsEncrypted` 与宏 |
 |------|----------------|----------|-----------------------------------|---------------------|---------------------|---------------------------------------------|
 | **Laravel** | 10.x ~ 12.x（运行环境 PHP ≥ 8.2） | Composer 包发现注册 `EncryptableServiceProvider` | ✓ | ✓ | ✓ | ✓ |
-| **Webman** | 1.x / 2.x，且项目已引入 **Illuminate**（database / support / validation） | 在插件或启动流程中注册 `Maize\Encryptable\EncryptableServiceProvider`，并拷贝 `config/encryptable.php` | ✓（使用 Eloquent 时） | ✓ | ✓ | ✓ |
-| **Hyperf** | 2.x / 3.x | `composer.json` → `extra.hyperf.config` 合并 `Maize\Encryptable\Bridge\Hyperf\ConfigProvider`，并配置 `config/autoload/encryptable.php` | —（非 Laravel 模型 Cast；可在实体/仓储中调用 `Encryption::php()`） | ✓ | ✓（需安装 `hyperf/db-connection`） | —（依赖 Illuminate 校验栈） |
-| **ThinkPHP** | 6.x ~ 8.x | 启动阶段调用 `Maize\Encryptable\Bridge\ThinkPHP\ThinkphpEncryptable::register($app)`，并维护 `config/encryptable.php` | —（请用模型获取器/修改器或类型字段自行调用 `Encryption::php()`） | ✓ | ✓ | — |
+| **Webman** | 1.x / 2.x，且项目已引入 **Illuminate**（database / support / validation） | 注册 `EncryptableServiceProvider` + 按安装节复制配置 | ✓（使用 Eloquent 时） | ✓ | ✓ | ✓ |
+| **Hyperf** | 2.x / 3.x | `extra.hyperf.config` 合并 `Bridge\Hyperf\ConfigProvider` + 按安装节复制 Hyperf 专用配置 | —（非 Laravel 模型 Cast；可在实体/仓储中调用 `Encryption::php()`） | ✓ | ✓（需安装 `hyperf/db-connection`） | —（依赖 Illuminate 校验栈） |
+| **ThinkPHP** | 6.x ~ 8.x | `ThinkphpEncryptable::register($app)` + 按安装节复制配置 | —（请用模型获取器/修改器或类型字段自行调用 `Encryption::php()`） | ✓ | ✓ | — |
 
 **图例：** ✓ 表示该能力在本栈有官方桥接或可直接使用；**—** 表示本包未提供该栈的专用实现，需自行在业务层对接。
 
@@ -48,41 +48,65 @@ Composer 包名：**[erikwang2013/encryptable](https://packagist.org/packages/er
 composer require erikwang2013/encryptable
 ```
 
-### Laravel
+### 配置文件（按框架复制到配置目录）
 
-安装后若已启用包自动发现，会注册 `Maize\Encryptable\EncryptableServiceProvider`。发布配置：
+根据当前项目使用的框架，**将包内对应模板复制到该框架约定的配置路径**（再按需修改 `.env` 等）。
+
+| 框架 | 复制源（vendor 内路径，包名以 `erikwang2013/encryptable` 为准） | 复制到（项目内目标路径） |
+|------|------------------------------------------------------------------|--------------------------|
+| **Laravel** | `vendor/erikwang2013/encryptable/config/encryptable.php` | `config/encryptable.php` |
+| **Webman** | 同上 | `config/encryptable.php` |
+| **ThinkPHP** | 同上 | `config/encryptable.php` |
+| **Hyperf** | `vendor/erikwang2013/encryptable/config/stubs/hyperf-autoload-encryptable.php` | `config/autoload/encryptable.php` |
+
+> **说明：** Laravel / Webman / ThinkPHP 使用同一份扁平模板 `config/encryptable.php`（顶层即 `key`、`cipher`）。Hyperf 的 `HyperfEncryptableConfig` 读取的是 `encryptable.key` / `encryptable.cipher`，因此必须使用 `config/stubs/hyperf-autoload-encryptable.php` 中带 **`encryptable` 分组** 的写法，**不要**直接把 Laravel 用扁平数组的那份文件拷成 `config/autoload/encryptable.php` 而不包一层 `encryptable` 键。
+
+**Shell 示例：**
+
+```bash
+# Laravel / Webman / ThinkPHP
+cp vendor/erikwang2013/encryptable/config/encryptable.php config/encryptable.php
+
+# Hyperf
+cp vendor/erikwang2013/encryptable/config/stubs/hyperf-autoload-encryptable.php config/autoload/encryptable.php
+```
+
+Laravel 也可改用发布命令（与手动复制到 `config/encryptable.php` 等价）：
 
 ```bash
 php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvider" --tag="encryptable-config"
 ```
 
+### Laravel（其余步骤）
+
+安装后若已启用包自动发现，会注册 `Maize\Encryptable\EncryptableServiceProvider`。完成上表 **Laravel** 行配置复制或执行 `vendor:publish` 即可。
+
 ### Webman（使用 Illuminate 组件时）
 
-按需安装 `illuminate/database`、`illuminate/support`、`illuminate/validation` 等，将包内 `config/encryptable.php` 拷入项目 `config/`，并在 Webman 的插件 / 启动流程中注册：
+按需安装 `illuminate/database`、`illuminate/support`、`illuminate/validation` 等，完成上表 **Webman** 行配置复制后，在插件或启动流程中注册：
 
 `Maize\Encryptable\EncryptableServiceProvider`
 
 ### Hyperf
 
-1. 本包在 `composer.json` 的 `extra.hyperf.config` 中声明了 `Maize\Encryptable\Bridge\Hyperf\ConfigProvider`，由 Hyperf 生态合并配置。
-2. 在 `config/autoload/` 下增加 `encryptable.php`（或等价配置），结构与 Laravel 中 `encryptable` 配置一致（`key`、`cipher`）。
+1. 完成上表 **Hyperf** 行配置复制。
+2. 本包在 `composer.json` 的 `extra.hyperf.config` 中声明了 `Maize\Encryptable\Bridge\Hyperf\ConfigProvider`，由 Hyperf 合并依赖注入配置。
 3. 若使用 `Encryption::db()`，请安装 **`hyperf/db-connection`**。
 
 ### ThinkPHP
 
-在应用启动阶段（例如服务注册或引导类中）调用：
+1. 完成上表 **ThinkPHP** 行配置复制。
+2. 在应用启动阶段（例如服务注册或引导类中）调用：
 
 ```php
 \Maize\Encryptable\Bridge\ThinkPHP\ThinkphpEncryptable::register($app);
 ```
 
-并在 `config/encryptable.php` 中维护与下节相同的配置键。
-
 ---
 
 ## 配置说明
 
-发布或手写 `config/encryptable.php` 后，核心项为：
+复制或发布得到 `config/encryptable.php`（或 Hyperf 下 `config/autoload/encryptable.php` 内 `encryptable` 段）后，核心项为：
 
 | 键 | 说明 |
 |----|------|
