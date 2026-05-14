@@ -10,6 +10,41 @@
 
 ---
 
+## 项目说明
+
+### 解决什么问题
+
+处理个人身份信息（PII）、医疗记录、财务数据或密钥等敏感字段时，通常需要**持久层加密**（非简单哈希或脱敏），同时保留**按原始值检索**的能力（唯一性校验、存在性查询）。纯加密库需要自行对接持久层，ORM 专用方案锁定单一框架。本项目填补了这两层空白。
+
+### 核心设计
+
+- **双加密路径** — `Encryption::php()` 负责应用层加解密（OpenSSL，与 Eloquent Cast 同一路径）；`Encryption::db()` 生成在数据库引擎内解密的 SQL 片段。两条路径共享同一套密钥与算法配置。
+- **默认确定性加密** — 默认算法 `aes-128-ecb` 确保相同明文产生相同密文，使 `UniqueEncrypted` / `ExistsEncrypted` 校验成为可能。当需要隐藏数据模式时，可切换为 CBC/GCM 类算法。
+- **容器无关解析** — `Encryption::resolve()` 依次探测 Hyperf、Laravel 及用户注入的 PSR-11 容器；无容器时回退至 `ENCRYPTION_KEY` / `ENCRYPTION_CIPHER` 环境变量。已为 **Laravel 10–12**、**Webman**（Illuminate 生态）、**Hyperf 2–3**、**ThinkPHP 6–8** 提供框架桥接。
+- **零停机密钥轮换** — 主密钥 + `previous_keys` 解密环使密钥替换无需大规模重加密；`rotateToCurrentKey()` 支持在线渐进密文迁移。
+
+### 相较上游 `laravel-encryptable` 的扩展
+
+| 方面 | 扩展内容 |
+|------|----------|
+| **多框架** | 除 Laravel/Lumen 外增加 Webman、Hyperf、ThinkPHP 桥接。 |
+| **Composer 插件** | 安装/更新时自动检测项目框架栈并写入对应配置文件。 |
+| **密钥轮换** | `previous_keys` 解密环 + `PreviousKeysParser` 解析器 + `rotateToCurrentKey()`（上游仅支持单一密钥）。 |
+| **容器解析** | `Encryption::setResolver()` / `setContainer()` 回调，非 Laravel 栈无需改动核心代码即可接入。 |
+| **类型覆盖** | 所有 public/protected 方法均声明返回类型，基线 PHP 8.2+。 |
+| **配置布局** | 统一 `config/plugin/{vendor}/{package}/app.php` 布局（Webman / Laravel / ThinkPHP 共用）；Hyperf 采用 autoload 点号键映射。 |
+
+### 适用场景
+
+| 推荐使用 | 建议替代方案 |
+|----------|--------------|
+| 需要 Eloquent 属性加密，在 `$casts` 中声明即可。 | 需要全盘或文件系统级加密（如 LUKS、云盘加密）。 |
+| 需要对加密列执行唯一性 / 存在性查询。 | 不需要查询能力，偏好更强的认证加密（如 libsodium `secretbox`）。 |
+| 面向多框架交付，希望加密契约统一。 | 仅面向单一框架，优先使用其原生加密（如 Laravel 内置 `encrypted` cast）。 |
+| 需要零停机密钥轮换。 | 安全模型要求逐行随机 IV/Nonce 和 HMAC 完整性认证。 |
+
+---
+
 ## 功能概览
 
 - **Eloquent 自定义 Cast**：在模型 `$casts` 中使用 `Encryptable::class`，自动加解密指定属性。

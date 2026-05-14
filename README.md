@@ -10,6 +10,41 @@ This repository evolves from the ideas and behaviour of **[laravel-encryptable](
 
 ---
 
+## Project overview
+
+### What this package solves
+
+Applications that handle personally identifiable information (PII), health records, financial data, or secrets often need to store those values **encrypted at rest** — not just hashed or masked — while keeping the ability to **query by the original value** (unique checks, existence lookups). Pure-encryption libraries leave you to implement the persistence layer yourself; ORM-only solutions lock you into one framework. This package bridges both gaps.
+
+### Core design
+
+- **Dual crypto path** — `Encryption::php()` for application-level encrypt/decrypt (OpenSSL, the same path Eloquent casts use), and `Encryption::db()` for generating SQL fragments that decrypt inside the database engine. The two paths share the same key and cipher config.
+- **Deterministic by default** — the default cipher `aes-128-ecb` ensures identical plaintext produces identical ciphertext, which is what makes `UniqueEncrypted` / `ExistsEncrypted` validation possible. When pattern concealment matters more, you can switch to a CBC/GCM cipher.
+- **Container-agnostic resolution** — `Encryption::resolve()` probes Hyperf, Laravel, and a user-supplied PSR-11 container; when none is available it falls back to `ENCRYPTION_KEY` / `ENCRYPTION_CIPHER` env vars. Framework bridges exist for **Laravel 10–12**, **Webman** (Illuminate), **Hyperf 2–3**, and **ThinkPHP 6–8**.
+- **Zero-downtime key rotation** — a primary key + `previous_keys` ring lets you rotate secrets without a big-bang re-encrypt. `rotateToCurrentKey()` provides gradual ciphertext migration under live traffic.
+
+### What this fork adds (beyond upstream `laravel-encryptable`)
+
+| Area | Extension |
+|------|-----------|
+| **Multi-framework** | Bridges for Webman, Hyperf, and ThinkPHP in addition to Laravel/Lumen. |
+| **Composer plugin** | Auto-publishes config files for the detected framework stack on install/update. |
+| **Key rotation** | `previous_keys` ring + `PreviousKeysParser` + `rotateToCurrentKey()` (upstream only handles a single key). |
+| **Container resolution** | `Encryption::setResolver()` / `setContainer()` callbacks so non-Laravel stacks can plug in without touching the core. |
+| **Type coverage** | Return types on all public/protected methods; PHP 8.2+ baseline. |
+| **Config layout** | Unified `config/plugin/{vendor}/{package}/app.php` layout shared across Webman, Laravel, ThinkPHP; Hyperf autoload path for its dotted-key convention. |
+
+### When to use (and when not to)
+
+| Use this package when | Consider alternatives when |
+|------------------------|----------------------------|
+| You need Eloquent attribute encryption that "just works" with `$casts`. | You need full-disk or filesystem-level encryption (use LUKS, AWS EBS encryption, etc.). |
+| You need to run uniqueness/existence checks against encrypted columns. | You don't need queryability and prefer stronger authenticated encryption (e.g. libsodium's `secretbox`). |
+| You ship to multiple PHP frameworks and want one encryption contract. | You only target one framework and prefer its native encryption (e.g. Laravel's built-in `encrypted` cast). |
+| You need to rotate encryption keys with zero downtime. | Your threat model requires per-row IVs/nonces and HMAC authentication. |
+
+---
+
 ## Features
 
 - **Eloquent custom cast**: use `Encryptable::class` in `$casts` for transparent encrypt/decrypt on attributes.
