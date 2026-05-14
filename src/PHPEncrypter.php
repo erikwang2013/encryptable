@@ -140,9 +140,9 @@ class PHPEncrypter extends Encrypter
 
     protected function base64Decode(string $payload): string
     {
-        $payload = base64_decode($payload);
+        $payload = base64_decode($payload, true);
 
-        if (! $payload) {
+        if ($payload === false) {
             throw new DecryptException('Could not decrypt the data.');
         }
 

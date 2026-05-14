@@ -16,7 +16,7 @@ use Maize\Encryptable\Support\PackagePluginPaths;
  * Publishes default config files following each supported framework's official layout.
  *
  * Detection order (merged):
- * 1) {@code vendor/composer/installed.php} / {@code installed.json} — everything actually present in vendor
+ * 1) {@code Composer::getRepositoryManager()->getLocalRepository()} — installed packages via Composer API
  * 2) {@code composer.lock} — full resolved graph
  * 3) Root {@code composer.json} {@code require} / {@code require-dev} keys
  * 4) Project filesystem heuristics (Webman {@code support/bootstrap.php}, Laravel {@code artisan}, Hyperf {@code bin/hyperf.php}, ThinkPHP {@code think}, …)
@@ -85,7 +85,7 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         $pluginAppStub = $installPath.'/config/stubs/plugin-app.php';
         $hyperfPluginStub = $installPath.'/config/stubs/hyperf-plugin-autoload.php';
 
-        $names = $this->collectPackageNamesLowercase($projectRoot);
+        $names = $this->collectPackageNamesLowercase($composer, $projectRoot);
         $fs = $this->inferFrameworkFromFilesystem($projectRoot);
 
         $laravel = isset($names['laravel/framework']) || $fs['laravel'];
@@ -148,33 +148,13 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
     /**
      * @return array<string, true> Lowercased Composer package names
      */
-    private function collectPackageNamesLowercase(string $projectRoot): array
+    private function collectPackageNamesLowercase(Composer $composer, string $projectRoot): array
     {
         $names = [];
 
-        $installedPhp = $projectRoot.'/vendor/composer/installed.php';
-        if (is_readable($installedPhp)) {
-            /** @var array<string, mixed>|false $data */
-            $data = @include $installedPhp;
-            if (is_array($data) && isset($data['versions']) && is_array($data['versions'])) {
-                foreach (array_keys($data['versions']) as $pkgName) {
-                    if (is_string($pkgName) && $pkgName !== '') {
-                        $names[strtolower($pkgName)] = true;
-                    }
-                }
-            }
-        }
-
-        $installedJson = $projectRoot.'/vendor/composer/installed.json';
-        if (is_readable($installedJson)) {
-            $json = json_decode((string) file_get_contents($installedJson), true);
-            if (is_array($json)) {
-                foreach ($json['packages'] ?? [] as $pkg) {
-                    if (is_array($pkg) && isset($pkg['name']) && is_string($pkg['name'])) {
-                        $names[strtolower($pkg['name'])] = true;
-                    }
-                }
-            }
+        $localRepo = $composer->getRepositoryManager()->getLocalRepository();
+        foreach ($localRepo->getPackages() as $package) {
+            $names[strtolower($package->getName())] = true;
         }
 
         $lockPath = $projectRoot.'/composer.lock';
@@ -193,10 +173,10 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
 
         $composerJson = $projectRoot.'/composer.json';
         if (is_readable($composerJson)) {
-            $composer = json_decode((string) file_get_contents($composerJson), true);
-            if (is_array($composer)) {
+            $rootPkg = json_decode((string) file_get_contents($composerJson), true);
+            if (is_array($rootPkg)) {
                 foreach (['require', 'require-dev'] as $section) {
-                    foreach (array_keys($composer[$section] ?? []) as $pkgName) {
+                    foreach (array_keys($rootPkg[$section] ?? []) as $pkgName) {
                         if (is_string($pkgName)) {
                             $names[strtolower($pkgName)] = true;
                         }

@@ -12,14 +12,19 @@ class Serializer
         'integer',
         'double',
         'boolean',
+        'NULL',
     ];
 
     public static function serialize($value): string
     {
         $valueType = gettype($value);
 
-        if (! in_array($valueType, self::SUPPORTED_TYPES)) {
+        if (! in_array($valueType, self::SUPPORTED_TYPES, true)) {
             throw new SerializationException;
+        }
+
+        if ($valueType === 'NULL') {
+            return 'NULL:';
         }
 
         $value = strval($value);
@@ -36,6 +41,10 @@ class Serializer
         }
 
         [$valueType, $value] = $payload;
+
+        if ($valueType === 'NULL') {
+            return null;
+        }
 
         if (! settype($value, $valueType)) {
             throw new UnserializationException;

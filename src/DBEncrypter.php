@@ -39,9 +39,14 @@ class DBEncrypter extends Encrypter
         return sprintf(
             $grammar,
             $payload,
-            $this->getEncryptionKey(),
+            $this->escapeSqlString($this->getEncryptionKey()),
             $this->getEncryptionCipherAlgorithm()
         );
+    }
+
+    private function escapeSqlString(string $value): string
+    {
+        return str_replace("'", "''", $value);
     }
 
     protected function getMysqlGrammarDecrypt(): string
@@ -58,14 +63,11 @@ class DBEncrypter extends Encrypter
     {
         $cipher = $this->getEncryptionCipher();
 
-        $dash = strrpos($cipher, '-');
+        $dash = strpos($cipher, '-');
         if ($dash === false) {
             return $cipher;
         }
 
-        $algorithm = strstr($cipher, '-', true) ?: $cipher;
-        $mode = substr($cipher, $dash + 1);
-
-        return "{$algorithm}-{$mode}";
+        return substr($cipher, 0, $dash);
     }
 }

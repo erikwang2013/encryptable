@@ -20,7 +20,16 @@ return [
     |
     | The cipher used to encrypt data.
     | Once defined, never change it or encrypted data cannot be correctly decrypted.
-    | Default value is the cipher algorithm used by default in MySQL.
+    |
+    | Default is aes-128-ecb (matching MySQL's AES_DECRYPT default). ECB produces
+    | deterministic ciphertext — identical plaintext always encrypts to identical
+    | ciphertext. This enables encrypted-column querying (UniqueEncrypted /
+    | ExistsEncrypted rules) but leaks equality patterns. Use a CBC/GCM cipher
+    | (e.g. aes-256-cbc) if pattern concealment matters more than searchability.
+    | All previous keys must use the same cipher as the primary key.
+    |
+    | IMPORTANT: ECB mode provides NO integrity authentication. Ciphertext can be
+    | modified without detection. Do NOT rely on encryption alone for tamper-proofing.
     |
     */
 

@@ -13,6 +13,9 @@ class Encryption
 
     private static ?EncryptableConfigContract $fallbackConfig = null;
 
+    /** @var null|callable(string): object */
+    private static $resolver = null;
+
     private $encrypter;
 
     public function __construct($encrypter)
@@ -28,6 +31,14 @@ class Encryption
     public static function setFallbackConfig(?EncryptableConfigContract $config): void
     {
         self::$fallbackConfig = $config;
+    }
+
+    /**
+     * @param callable(string): object $resolver
+     */
+    public static function setResolver(callable $resolver): void
+    {
+        self::$resolver = $resolver;
     }
 
     public static function php(): self
@@ -50,13 +61,13 @@ class Encryption
             ->isEncrypted($value);
     }
 
-    public function encrypt($value, bool $serialize = true)
+    public function encrypt($value, bool $serialize = true): ?string
     {
         return $this->encrypter
             ->encrypt($value, $serialize);
     }
 
-    public function decrypt(?string $payload, bool $unserialize = true)
+    public function decrypt(?string $payload, bool $unserialize = true): mixed
     {
         return $this->encrypter
             ->decrypt($payload, $unserialize);
@@ -77,6 +88,10 @@ class Encryption
 
     private static function resolve(string $abstract): object
     {
+        if (self::$resolver !== null) {
+            return (self::$resolver)($abstract);
+        }
+
         if (class_exists(\Hyperf\Context\ApplicationContext::class)) {
             try {
                 $hyperf = \Hyperf\Context\ApplicationContext::getContainer();
@@ -108,7 +123,7 @@ class Encryption
 
         throw new RuntimeException(
             "Unable to resolve [{$abstract}]. Register bindings in your framework service provider, ".
-            'or call Encryption::setContainer() with a PSR-11 container.'
+            'or call Encryption::setResolver() with a PSR-11 container callback.'
         );
     }
 
