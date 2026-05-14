@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Copyright (c) 2026 erik <erik@erik.xyz> — https://erik.xyz
+ */
+
 namespace Maize\Encryptable;
 
 use Maize\Encryptable\Contracts\EncryptableConfigContract;
@@ -17,7 +21,7 @@ abstract class Encrypter
 
     abstract public function encrypt($value, bool $serialize = true): ?string;
 
-    abstract public function decrypt(?string $payload, bool $unserialize = true);
+    abstract public function decrypt(?string $payload, bool $unserialize = true): mixed;
 
     protected function getEncryptionKey(): string
     {

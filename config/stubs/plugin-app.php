@@ -1,6 +1,10 @@
 <?php
 
 /**
+ * Copyright (c) 2026 erik <erik@erik.xyz> — https://erik.xyz
+ */
+
+/**
  * 多框架共用的插件布局主配置：顶层 {@code key} / {@code cipher}。
  *
  * - Webman：置于 {@code config/plugin/{vendor}/{package}/app.php}，读取 {@code config('plugin.{vendor}.{package}.app.*')}。

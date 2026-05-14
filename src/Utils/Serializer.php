@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Copyright (c) 2026 erik <erik@erik.xyz> — https://erik.xyz
+ */
+
 namespace Maize\Encryptable\Utils;
 
 use Maize\Encryptable\Exceptions\SerializationException;
@@ -32,7 +36,7 @@ class Serializer
         return "{$valueType}:{$value}";
     }
 
-    public static function unserialize(string $payload)
+    public static function unserialize(string $payload): mixed
     {
         $payload = explode(':', $payload, 2);
 

@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Copyright (c) 2026 erik <erik@erik.xyz> — https://erik.xyz
+ */
+
 namespace Maize\Encryptable;
 
 use Maize\Encryptable\Contracts\DbDriverDetector;
@@ -24,7 +28,7 @@ class DBEncrypter extends Encrypter
         throw new EncryptException('Operation not supported.');
     }
 
-    public function decrypt(?string $payload, bool $unserialize = true)
+    public function decrypt(?string $payload, bool $unserialize = true): string
     {
         if (is_null($payload)) {
             return null;

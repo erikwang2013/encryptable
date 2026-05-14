@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Copyright (c) 2026 erik <erik@erik.xyz> — https://erik.xyz
+ */
+
 namespace Maize\Encryptable;
 
 use Maize\Encryptable\Exceptions\DecryptException;
@@ -31,7 +35,7 @@ class PHPEncrypter extends Encrypter
         return $value;
     }
 
-    public function decrypt(?string $payload, bool $unserialize = true)
+    public function decrypt(?string $payload, bool $unserialize = true): mixed
     {
         if (is_null($payload)) {
             return null;
@@ -120,7 +124,7 @@ class PHPEncrypter extends Encrypter
             OPENSSL_RAW_DATA
         );
 
-        if (! $value) {
+        if ($value === false) {
             throw new EncryptException('Could not encrypt the data.');
         }
 
@@ -131,7 +135,7 @@ class PHPEncrypter extends Encrypter
     {
         $value = base64_encode($value);
 
-        if (! $value) {
+        if ($value === false) {
             throw new EncryptException('Could not encrypt the data.');
         }
 

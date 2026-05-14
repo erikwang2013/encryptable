@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Copyright (c) 2026 erik <erik@erik.xyz> — https://erik.xyz
+ */
+
 namespace Maize\Encryptable\Composer;
 
 use Composer\Composer;
@@ -106,7 +110,7 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
 
         if (! $publishPluginApp && ! $publishHyperfPlugin) {
             $io->write(sprintf(
-                '<comment>[%s]</comment> Skipped auto config: no supported framework detected (checked vendor/composer/installed.php|.json, composer.lock, composer.json, and project layout). Copy files manually (see README).',
+                '<comment>[%s]</comment> Skipped auto config: no supported framework detected (checked Composer local repository, composer.lock, composer.json, and project layout). Copy files manually (see README).',
                 PackagePluginPaths::COMPOSER_NAME
             ));
 
