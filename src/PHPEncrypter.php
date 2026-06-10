@@ -15,8 +15,10 @@ use Erikwang2013\Encryptable\Utils\Serializer;
 class PHPEncrypter extends Encrypter
 {
     private const FORMAT_V1 = "\x01";
+    private const FORMAT_V2 = "\x02";
     private const HMAC_ALGO = 'sha256';
     private const HMAC_LENGTH = 32;
+    private const TAG_LENGTH = 16;
 
     public function encrypt(mixed $value, bool $serialize = true): ?string
     {
@@ -37,6 +39,28 @@ class PHPEncrypter extends Encrypter
         $cipher = $this->getEncryptionCipher();
         $ivLength = openssl_cipher_iv_length($cipher);
         $iv = $ivLength > 0 ? random_bytes($ivLength) : '';
+
+        if ($this->isAeadCipher($cipher)) {
+            $tag = '';
+            $ciphertext = openssl_encrypt(
+                $value,
+                $cipher,
+                $this->getEncryptionKey(),
+                OPENSSL_RAW_DATA,
+                $iv,
+                $tag
+            );
+
+            if ($ciphertext === false) {
+                throw new EncryptException(
+                    'OpenSSL encryption failed: ' . (openssl_error_string() ?: 'unknown error')
+                );
+            }
+
+            $hmac = hash_hmac(self::HMAC_ALGO, $iv . $tag . $ciphertext, $this->getHmacKey(), true);
+
+            return $this->base64Encode(self::FORMAT_V2 . $iv . $tag . $ciphertext . $hmac);
+        }
 
         $ciphertext = openssl_encrypt(
             $value,
@@ -128,11 +152,19 @@ class PHPEncrypter extends Encrypter
     {
         $cipher = $this->getEncryptionCipher();
 
-        if (str_starts_with($decoded, self::FORMAT_V1)) {
+        if (str_starts_with($decoded, self::FORMAT_V2)) {
+            return $this->tryDecryptV2($decoded, $cipher);
+        }
+
+        if (str_starts_with($decoded, self::FORMAT_V1) && ! $this->isAeadCipher($cipher)) {
             return $this->tryDecryptV1($decoded, $cipher);
         }
 
-        return $this->tryDecryptV0($decoded, $cipher);
+        if (! $this->isAeadCipher($cipher)) {
+            return $this->tryDecryptV0($decoded, $cipher);
+        }
+
+        return null;
     }
 
     private function tryDecryptV1(string $data, string $cipher): ?string
@@ -155,6 +187,36 @@ class PHPEncrypter extends Encrypter
         }
 
         return null;
+    }
+
+    private function tryDecryptV2(string $data, string $cipher): ?string
+    {
+        $ivLength = openssl_cipher_iv_length($cipher);
+        $iv = $ivLength > 0 ? substr($data, 1, $ivLength) : '';
+        $tag = substr($data, 1 + $ivLength, self::TAG_LENGTH);
+        $hmac = substr($data, -self::HMAC_LENGTH);
+        $ciphertext = substr($data, 1 + $ivLength + self::TAG_LENGTH, -self::HMAC_LENGTH);
+
+        foreach ($this->getDecryptionKeyRing() as $key) {
+            $expectedHmac = hash_hmac(self::HMAC_ALGO, $iv . $tag . $ciphertext, self::deriveHmacKey($key), true);
+            if (! hash_equals($expectedHmac, $hmac)) {
+                continue;
+            }
+
+            $plain = openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
+            if ($plain !== false && str_starts_with($plain, self::DIRTY_BIT_KEY)) {
+                return $plain;
+            }
+        }
+
+        return null;
+    }
+
+    private function isAeadCipher(string $cipher): bool
+    {
+        $upper = strtoupper($cipher);
+
+        return str_contains($upper, 'GCM') || str_contains($upper, 'CCM');
     }
 
     private function tryDecryptV0(string $data, string $cipher): ?string
