@@ -2,3 +2,8 @@
 /.phpunit.cache/
 /.phpunit.result.cache
 composer.lock
+.claude
+.claude-flow
+.swarm
+.mcp.json
+ruvector.db

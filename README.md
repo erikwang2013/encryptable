@@ -4,7 +4,7 @@
 
 # Encryptable (`erikwang2013/encryptable`)
 
-On **PHP 8.2+**, this package helps you **anonymize / encrypt sensitive attributes in a query-friendly way**: values are encrypted before persistence and decrypted when read through Eloquent (or manual APIs). It can also emit **MySQL / PostgreSQL**-compatible SQL fragments so you can compare or search against encrypted columns in raw queries. The PHP namespace remains `Maize\Encryptable\...` for historical compatibility.
+On **PHP 8.2+**, this package helps you **anonymize / encrypt sensitive attributes in a query-friendly way**: values are encrypted before persistence and decrypted when read through Eloquent (or manual APIs). It can also emit **MySQL / PostgreSQL**-compatible SQL fragments so you can compare or search against encrypted columns in raw queries.
 
 This repository evolves from the ideas and behaviour of **[laravel-encryptable](https://github.com/maize-tech/laravel-encryptable)** (Maize Tech). For the original design, issues, and releases, refer to that upstream project.
 
@@ -19,7 +19,7 @@ Applications that handle personally identifiable information (PII), health recor
 ### Core design
 
 - **Dual crypto path** — `Encryption::php()` for application-level encrypt/decrypt (OpenSSL, the same path Eloquent casts use), and `Encryption::db()` for generating SQL fragments that decrypt inside the database engine. The two paths share the same key and cipher config.
-- **Deterministic by default** — the default cipher `aes-128-ecb` ensures identical plaintext produces identical ciphertext, which is what makes `UniqueEncrypted` / `ExistsEncrypted` validation possible. When pattern concealment matters more, you can switch to a CBC/GCM cipher.
+- **Authenticated encryption by default** — the default cipher `aes-256-gcm` provides confidentiality and integrity via AEAD. If deterministic encryption is needed (required for `UniqueEncrypted` / `ExistsEncrypted` validation rules), switch to `aes-128-ecb` (identical plaintext → identical ciphertext) or another non-AEAD cipher.
 - **Container-agnostic resolution** — `Encryption::resolve()` probes Hyperf, Laravel, and a user-supplied PSR-11 container; when none is available it falls back to `ENCRYPTION_KEY` / `ENCRYPTION_CIPHER` env vars. Framework bridges exist for **Laravel 10–12**, **Webman** (Illuminate), **Hyperf 2–3**, and **ThinkPHP 6–8**.
 - **Zero-downtime key rotation** — a primary key + `previous_keys` ring lets you rotate secrets without a big-bang re-encrypt. `rotateToCurrentKey()` provides gradual ciphertext migration under live traffic.
 
@@ -91,7 +91,7 @@ composer require erikwang2013/encryptable
 
 ### Composer plugin (auto-publish config)
 
-This package has `"type": "composer-plugin"` and registers `Maize\Encryptable\Composer\Plugin`. After **install** or **update** of `erikwang2013/encryptable`, Composer runs the plugin, which:
+This package has `"type": "composer-plugin"` and registers `Erikwang2013\Encryptable\Composer\Plugin`. After **install** or **update** of `erikwang2013/encryptable`, Composer runs the plugin, which:
 
 1. Collects Composer package names (lowercased) from, in order: **`vendor/composer/installed.php`** (and **`installed.json`** if present), **`composer.lock`**, then root **`composer.json`** `require` / `require-dev`. This matches **what is actually installed in `vendor/`**, including transitive Webman / Hyperf packages that never appear in your root `composer.json`.
 2. Adds **filesystem hints** when needed (e.g. Webman: `support/bootstrap.php`, `start.php`, or `windows.php` plus `config/`; Laravel: `artisan` + `bootstrap/app.php` or `app/Http/Kernel.php`; Hyperf: `bin/hyperf.php` or `config/autoload/server.php`; ThinkPHP: executable `think` file in the project root).
@@ -147,25 +147,25 @@ cp vendor/erikwang2013/encryptable/config/stubs/hyperf-plugin-autoload.php confi
 Laravel alternative (`vendor:publish` publishes the plugin file, optional legacy flat file, and the Hyperf stub path for convenience):
 
 ```bash
-php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvider" --tag="encryptable-config"
+php artisan vendor:publish --provider="Erikwang2013\Encryptable\EncryptableServiceProvider" --tag="encryptable-config"
 ```
 
 ### Laravel (remaining steps)
 
-With package auto-discovery enabled, `Maize\Encryptable\EncryptableServiceProvider` is registered. Ensure **`config/plugin/erikwang2013/encryptable/app.php`** exists (Composer plugin or **Laravel** row / `vendor:publish`), or keep a legacy **`config/encryptable.php`** only.
+With package auto-discovery enabled, `Erikwang2013\Encryptable\EncryptableServiceProvider` is registered. Ensure **`config/plugin/erikwang2013/encryptable/app.php`** exists (Composer plugin or **Laravel** row / `vendor:publish`), or keep a legacy **`config/encryptable.php`** only.
 
 ### Webman (with Illuminate)
 
 Install `illuminate/database`, `illuminate/support`, `illuminate/validation`, etc. as needed. Ensure the plugin config exists at **`config/plugin/erikwang2013/encryptable/app.php`** (the Composer plugin or `vendor:publish` creates it). Then register:
 
-`Maize\Encryptable\EncryptableServiceProvider`
+`Erikwang2013\Encryptable\EncryptableServiceProvider`
 
 in your plugin/bootstrap code. Runtime reads **`config('plugin.erikwang2013.encryptable.app.key')`** and **`.cipher`**, per [Webman plugin config rules](https://webman.workerman.net/doc/en/plugin/create.html).
 
 ### Hyperf
 
 1. Copy or auto-install config per the **Hyperf** row (`config/autoload/plugins/erikwang2013/encryptable.php`, or legacy `config/autoload/encryptable.php`). Values are read as **`plugins.erikwang2013.encryptable.key`** / **`.cipher`**, with fallback to **`encryptable.*`**.
-2. This package declares `Maize\Encryptable\Bridge\Hyperf\ConfigProvider` under `composer.json` → `extra.hyperf.config` for Hyperf to merge.
+2. This package declares `Erikwang2013\Encryptable\Bridge\Hyperf\ConfigProvider` under `composer.json` → `extra.hyperf.config` for Hyperf to merge.
 3. For `Encryption::db()`, install **`hyperf/db-connection`**.
 
 ### ThinkPHP
@@ -174,7 +174,7 @@ in your plugin/bootstrap code. Runtime reads **`config('plugin.erikwang2013.encr
 2. During application bootstrap (e.g. service registration), call:
 
 ```php
-\Maize\Encryptable\Bridge\ThinkPHP\ThinkphpEncryptable::register($app);
+\Erikwang2013\Encryptable\Bridge\ThinkPHP\ThinkphpEncryptable::register($app);
 ```
 
 ---
@@ -186,7 +186,7 @@ After copying or publishing **`config/plugin/erikwang2013/encryptable/app.php`**
 | Key | Description |
 |-----|-------------|
 | `key` | Primary secret key, from `ENCRYPTION_KEY`. New ciphertext is always produced with this key. |
-| `cipher` | Cipher id, default `aes-128-ecb`, from `ENCRYPTION_CIPHER`; keep aligned with DB defaults and any existing data contract. **All keys in the ring must use this cipher.** |
+| `cipher` | Cipher id, default `aes-256-gcm`, from `ENCRYPTION_CIPHER`; keep aligned with DB defaults and any existing data contract. **All keys in the ring must use this cipher.** |
 | `previous_keys` | Retired keys still tried for **decrypt** after the primary fails (same cipher). From `ENCRYPTION_PREVIOUS_KEYS` (comma-separated or JSON array) or the `previous_keys` config entry. |
 
 Without Laravel / bindings, `Encryption::php()` can still read **`ENCRYPTION_KEY`**, **`ENCRYPTION_CIPHER`**, and **`ENCRYPTION_PREVIOUS_KEYS`** via `EnvEncryptableConfig`.
@@ -200,7 +200,7 @@ You can **change the primary encryption key without taking the app offline for a
 | Area | Behavior |
 |------|----------|
 | **Config contract** | `EncryptableConfigContract::getPreviousKeys(): array` — retired keys used **only after** the primary `getKey()` fails to produce valid plaintext. Implemented for Laravel (`encryptable.previous_keys`), Webman plugin `app.php`, Hyperf (`plugins.*` / `encryptable.*`), ThinkPHP (`encryptable.previous_keys`), and `EnvEncryptableConfig` (`ENCRYPTION_PREVIOUS_KEYS`). |
-| **Parsing** | `Maize\Encryptable\Support\PreviousKeysParser` turns `ENCRYPTION_PREVIOUS_KEYS` or config into a `list<string>`: comma-separated values, or a JSON array string (e.g. `["k1","k2"]`), or an already-loaded PHP array. |
+| **Parsing** | `Erikwang2013\Encryptable\Support\PreviousKeysParser` turns `ENCRYPTION_PREVIOUS_KEYS` or config into a `list<string>`: comma-separated values, or a JSON array string (e.g. `["k1","k2"]`), or an already-loaded PHP array. |
 | **Key ring** | `Encrypter::getDecryptionKeyRing()` builds `[primary, …previous]` with empty strings and duplicate keys removed. **All keys in the ring must share the same `cipher`.** |
 | **Encrypt** | `PHPEncrypter::encrypt()` always uses the **primary** key only (`getKey()`). |
 | **Decrypt & `isEncrypted()`** | For each ring key, OpenSSL decrypt is tried; success requires decrypted payload to start with the internal dirty prefix (`crypt:`), so random garbage from a wrong key is not treated as valid. Same logic powers Eloquent `Encryptable` casts via `Encryption::php()`. |
@@ -243,7 +243,7 @@ ENCRYPTION_PREVIOUS_KEYS=["oldKeyOne16bytes!!","olderKeyTwo16byte","ancientKeyTh
 
 **2 — Laravel / ThinkPHP merged config (`encryptable.previous_keys`)**
 
-PHP array (same order semantics as above). Each string must match the **same length OpenSSL expects** for your `cipher` (e.g. `aes-128-ecb` typically uses a **16-byte** secret string).
+PHP array (same order semantics as above). Each string must match the **same length OpenSSL expects** for your `cipher` (e.g. `aes-256-gcm` typically uses a **32-byte** secret string).
 
 ```php
 'previous_keys' => [
@@ -271,7 +271,7 @@ Use the same `previous_keys` key as in the stubs: either a **PHP array** as abov
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Maize\Encryptable\Encryptable;
+use Erikwang2013\Encryptable\Encryptable;
 
 class User extends Model
 {
@@ -289,7 +289,7 @@ Attributes are encrypted/decrypted automatically on read/write.
 ### 2. Manual encrypt/decrypt (PHP)
 
 ```php
-use Maize\Encryptable\Encryption;
+use Erikwang2013\Encryptable\Encryption;
 
 $plain = 'value to protect';
 $cipher = Encryption::php()->encrypt($plain);
@@ -300,7 +300,7 @@ $restored = Encryption::php()->decrypt($cipher);
 ### 3. SQL decrypt expression (DB)
 
 ```php
-use Maize\Encryptable\Encryption;
+use Erikwang2013\Encryptable\Encryption;
 
 // Fragment usable in SELECT / WHERE (syntax differs for MySQL vs Postgres)
 $expr = Encryption::db()->decrypt($encryptedPayloadFromDb);
@@ -313,8 +313,8 @@ $expr = Encryption::db()->decrypt($encryptedPayloadFromDb);
 ```php
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Maize\Encryptable\Rules\ExistsEncrypted;
-use Maize\Encryptable\Rules\UniqueEncrypted;
+use Erikwang2013\Encryptable\Rules\ExistsEncrypted;
+use Erikwang2013\Encryptable\Rules\UniqueEncrypted;
 
 Validator::make($data, [
     'email' => [

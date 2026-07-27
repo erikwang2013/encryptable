@@ -4,7 +4,7 @@
 
 # Encryptable（erikwang2013/encryptable）
 
-在 **PHP 8.2+** 环境下，为敏感字段提供「可检索的匿名化 / 加密」能力：写入数据库前加密，经 Eloquent（或手动 API）读出时解密；同时可生成与 **MySQL / PostgreSQL** 兼容的 SQL 片段，便于在查询条件中对接已加密列。命名空间仍为 `Maize\Encryptable\...`（历史兼容）。
+在 **PHP 8.2+** 环境下，为敏感字段提供「可检索的匿名化 / 加密」能力：写入数据库前加密，经 Eloquent（或手动 API）读出时解密；同时可生成与 **MySQL / PostgreSQL** 兼容的 SQL 片段，便于在查询条件中对接已加密列。
 
 本仓库在思路与行为上参考并演进自开源项目 **[laravel-encryptable](https://github.com/maize-tech/laravel-encryptable)**（Maize Tech）。若需对照原版设计、Issue 与发布说明，请优先查阅该上游仓库。
 
@@ -19,7 +19,7 @@
 ### 核心设计
 
 - **双加密路径** — `Encryption::php()` 负责应用层加解密（OpenSSL，与 Eloquent Cast 同一路径）；`Encryption::db()` 生成在数据库引擎内解密的 SQL 片段。两条路径共享同一套密钥与算法配置。
-- **默认确定性加密** — 默认算法 `aes-128-ecb` 确保相同明文产生相同密文，使 `UniqueEncrypted` / `ExistsEncrypted` 校验成为可能。当需要隐藏数据模式时，可切换为 CBC/GCM 类算法。
+- **默认认证加密** — 默认算法 `aes-256-gcm` 通过 AEAD 提供机密性与完整性保护。若需要确定性加密（`UniqueEncrypted` / `ExistsEncrypted` 校验规则必需），可切换为 `aes-128-ecb`（相同明文→相同密文）或其他非 AEAD 算法。
 - **容器无关解析** — `Encryption::resolve()` 依次探测 Hyperf、Laravel 及用户注入的 PSR-11 容器；无容器时回退至 `ENCRYPTION_KEY` / `ENCRYPTION_CIPHER` 环境变量。已为 **Laravel 10–12**、**Webman**（Illuminate 生态）、**Hyperf 2–3**、**ThinkPHP 6–8** 提供框架桥接。
 - **零停机密钥轮换** — 主密钥 + `previous_keys` 解密环使密钥替换无需大规模重加密；`rotateToCurrentKey()` 支持在线渐进密文迁移。
 
@@ -91,7 +91,7 @@ composer require erikwang2013/encryptable
 
 ### Composer 插件（自动发布配置）
 
-本包为 `"type": "composer-plugin"`，通过 `extra.class` 注册 `Maize\Encryptable\Composer\Plugin`。在 **`erikwang2013/encryptable` 被安装或更新**后，插件会：
+本包为 `"type": "composer-plugin"`，通过 `extra.class` 注册 `Erikwang2013\Encryptable\Composer\Plugin`。在 **`erikwang2013/encryptable` 被安装或更新**后，插件会：
 
 1. 按顺序汇总 Composer 包名（小写）：**`vendor/composer/installed.php`**（及 **`installed.json`**）、**`composer.lock`**、根 **`composer.json`** 的 `require` / `require-dev`。这样能反映 **`vendor` 里真实已安装** 的包（含传递依赖），避免根 `composer.json` 未写 `workerman/webman` 时误判。
 2. 若仍不足以判断，再结合**项目目录特征**（如 Webman：`support/bootstrap.php` 或 `start.php` / `windows.php` 且存在 `config/`；Laravel：`artisan` 与 `bootstrap/app.php` 等；Hyperf：`bin/hyperf.php` 或 `config/autoload/server.php`；ThinkPHP：根目录可执行文件 `think`）。
@@ -147,25 +147,25 @@ cp vendor/erikwang2013/encryptable/config/stubs/hyperf-plugin-autoload.php confi
 Laravel 也可使用 `vendor:publish`（会发布插件路径、可选旧版扁平文件及 Hyperf stub 路径）：
 
 ```bash
-php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvider" --tag="encryptable-config"
+php artisan vendor:publish --provider="Erikwang2013\Encryptable\EncryptableServiceProvider" --tag="encryptable-config"
 ```
 
 ### Laravel（其余步骤）
 
-安装后若已启用包自动发现，会注册 `Maize\Encryptable\EncryptableServiceProvider`。请确保存在 **`config/plugin/erikwang2013/encryptable/app.php`**（Composer 钩子或上表 / `vendor:publish`），或仅保留旧版 **`config/encryptable.php`**。
+安装后若已启用包自动发现，会注册 `Erikwang2013\Encryptable\EncryptableServiceProvider`。请确保存在 **`config/plugin/erikwang2013/encryptable/app.php`**（Composer 钩子或上表 / `vendor:publish`），或仅保留旧版 **`config/encryptable.php`**。
 
 ### Webman（使用 Illuminate 组件时）
 
 按需安装 `illuminate/database`、`illuminate/support`、`illuminate/validation` 等。确保存在 **`config/plugin/erikwang2013/encryptable/app.php`**（Composer 安装钩子或 `vendor:publish` 会生成），然后在插件或启动流程中注册：
 
-`Maize\Encryptable\EncryptableServiceProvider`
+`Erikwang2013\Encryptable\EncryptableServiceProvider`
 
 运行时读取 **`config('plugin.erikwang2013.encryptable.app.key')`** 与 **`.cipher`**，见 [Webman 插件配置说明](https://webman.workerman.net/doc/zh-cn/plugin/create.html)。
 
 ### Hyperf
 
 1. 按上表复制或依赖安装钩子生成 **`config/autoload/plugins/erikwang2013/encryptable.php`**（或旧版 **`config/autoload/encryptable.php`**）。读取顺序为 **`plugins.erikwang2013.encryptable.*`**，再回退 **`encryptable.*`**。
-2. 本包在 `composer.json` 的 `extra.hyperf.config` 中声明了 `Maize\Encryptable\Bridge\Hyperf\ConfigProvider`，由 Hyperf 合并依赖注入配置。
+2. 本包在 `composer.json` 的 `extra.hyperf.config` 中声明了 `Erikwang2013\Encryptable\Bridge\Hyperf\ConfigProvider`，由 Hyperf 合并依赖注入配置。
 3. 若使用 `Encryption::db()`，请安装 **`hyperf/db-connection`**。
 
 ### ThinkPHP
@@ -174,7 +174,7 @@ php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvi
 2. 在应用启动阶段（例如服务注册或引导类中）调用：
 
 ```php
-\Maize\Encryptable\Bridge\ThinkPHP\ThinkphpEncryptable::register($app);
+\Erikwang2013\Encryptable\Bridge\ThinkPHP\ThinkphpEncryptable::register($app);
 ```
 
 ---
@@ -186,7 +186,7 @@ php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvi
 | 键 | 说明 |
 |----|------|
 | `key` | 当前主密钥，对应 `ENCRYPTION_KEY`；**新密文**始终用该密钥加密。 |
-| `cipher` | 算法标识，默认 `aes-128-ecb`，对应 `ENCRYPTION_CIPHER`；需与数据库侧及既有数据约定一致。**密钥环内所有密钥须使用同一 `cipher`。** |
+| `cipher` | 算法标识，默认 `aes-256-gcm`，对应 `ENCRYPTION_CIPHER`；需与数据库侧及既有数据约定一致。**密钥环内所有密钥须使用同一 `cipher`。** |
 | `previous_keys` | 已下线但仍用于**解密**尝试的密钥列表，在 `key` 解密失败后再依次尝试。来自 `ENCRYPTION_PREVIOUS_KEYS`（逗号分隔或 JSON 数组）或配置项 `previous_keys`。 |
 
 无 Laravel / 未绑定容器时，`Encryption::php()` 可回退读取 **`ENCRYPTION_KEY`**、**`ENCRYPTION_CIPHER`**、**`ENCRYPTION_PREVIOUS_KEYS`**（见 `EnvEncryptableConfig`）。
@@ -200,7 +200,7 @@ php artisan vendor:publish --provider="Maize\Encryptable\EncryptableServiceProvi
 | 方面 | 行为 |
 |------|------|
 | **配置契约** | `EncryptableConfigContract::getPreviousKeys(): array` 表示仅用于**解密兜底**的已下线密钥列表，在主密钥 `getKey()` 无法解出合法明文后再**按顺序**尝试。Laravel（`encryptable.previous_keys`）、Webman 插件 `app.php`、Hyperf（`plugins.*` / `encryptable.*`）、ThinkPHP（`encryptable.previous_keys`）、无容器时的 `EnvEncryptableConfig`（`ENCRYPTION_PREVIOUS_KEYS`）均已对接。 |
-| **解析** | `Maize\Encryptable\Support\PreviousKeysParser` 将环境变量或配置统一为 `list<string>`：支持逗号分隔、`["k1","k2"]` 形式的 JSON 字符串、或 PHP 数组。 |
+| **解析** | `Erikwang2013\Encryptable\Support\PreviousKeysParser` 将环境变量或配置统一为 `list<string>`：支持逗号分隔、`["k1","k2"]` 形式的 JSON 字符串、或 PHP 数组。 |
 | **密钥环** | 基类 `Encrypter::getDecryptionKeyRing()` 生成 `[主密钥, …previous_keys]`，去空、去与主密钥重复项。**环内所有密钥须与主密钥使用同一 `cipher`。** |
 | **加密** | `PHPEncrypter::encrypt()` **仅使用主密钥**（`getKey()`），不会用 `previous_keys` 加密。 |
 | **解密与 `isEncrypted()`** | 对每个候选密钥尝试 OpenSSL 解密；仅当解密结果以包内约定的脏前缀（`crypt:`）开头时才视为成功，避免把错误密钥产生的乱码当成明文。Eloquent `Encryptable` 等经 `Encryption::php()` 的路径与此一致。 |
@@ -243,7 +243,7 @@ ENCRYPTION_PREVIOUS_KEYS=["oldKeyOne16bytes!!","olderKeyTwo16byte","ancientKeyTh
 
 **方式二：Laravel / ThinkPHP 合并配置 `encryptable.previous_keys`**
 
-在 `config/encryptable.php` 或插件 `app.php` 里写 PHP 数组（顺序即尝试顺序；须与当前 `cipher` 要求的长度一致，例如 `aes-128-ecb` 常见为 **16 字符**）：
+在 `config/encryptable.php` 或插件 `app.php` 里写 PHP 数组（顺序即尝试顺序；须与当前 `cipher` 要求的长度一致，例如 `aes-256-gcm` 常见为 **32 字符**）：
 
 ```php
 'previous_keys' => [
@@ -271,7 +271,7 @@ ENCRYPTION_PREVIOUS_KEYS=["oldKeyOne16bytes!!","olderKeyTwo16byte","ancientKeyTh
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Maize\Encryptable\Encryptable;
+use Erikwang2013\Encryptable\Encryptable;
 
 class User extends Model
 {
@@ -289,7 +289,7 @@ class User extends Model
 ### 2. 手动加解密（PHP）
 
 ```php
-use Maize\Encryptable\Encryption;
+use Erikwang2013\Encryptable\Encryption;
 
 $plain = '需要保护的值';
 $cipher = Encryption::php()->encrypt($plain);
@@ -300,7 +300,7 @@ $restored = Encryption::php()->decrypt($cipher);
 ### 3. 生成 SQL 中的解密表达式（DB）
 
 ```php
-use Maize\Encryptable\Encryption;
+use Erikwang2013\Encryptable\Encryption;
 
 // 返回可在 SELECT / WHERE 中使用的片段（具体语法随 MySQL / Postgres 变化）
 $expr = Encryption::db()->decrypt($encryptedPayloadFromDb);
@@ -313,8 +313,8 @@ $expr = Encryption::db()->decrypt($encryptedPayloadFromDb);
 ```php
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Maize\Encryptable\Rules\ExistsEncrypted;
-use Maize\Encryptable\Rules\UniqueEncrypted;
+use Erikwang2013\Encryptable\Rules\ExistsEncrypted;
+use Erikwang2013\Encryptable\Rules\UniqueEncrypted;
 
 Validator::make($data, [
     'email' => [
