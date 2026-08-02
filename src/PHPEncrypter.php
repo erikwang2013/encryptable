@@ -87,10 +87,6 @@ class PHPEncrypter extends Encrypter
             return null;
         }
 
-        if (! is_string($payload)) {
-            return $payload;
-        }
-
         try {
             $decoded = $this->base64Decode($payload);
         } catch (DecryptException) {

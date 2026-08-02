@@ -33,9 +33,11 @@ class Serializer
             return 'NULL:';
         }
 
-        $value = strval($value);
+        if ($valueType === 'boolean') {
+            return $value ? 'boolean:1' : 'boolean:0';
+        }
 
-        return "{$valueType}:{$value}";
+        return "{$valueType}:" . strval($value);
     }
 
     public static function unserialize(string $payload): mixed

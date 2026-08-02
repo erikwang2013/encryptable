@@ -15,6 +15,9 @@ use Erikwang2013\Encryptable\PHPEncrypter;
 
 class ConfigProvider
 {
+    /**
+     * @return array{dependencies: array<class-string, class-string>}
+     */
     public function __invoke(): array
     {
         return [

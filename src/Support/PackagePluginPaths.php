@@ -18,11 +18,13 @@ final class PackagePluginPaths
     public const COMPOSER_NAME = 'erikwang2013/encryptable';
 
     /**
-     * @return array{0: string, 1: string}
+     * @return array{string, string}
      */
     public static function splitVendorPackage(): array
     {
-        return explode('/', self::COMPOSER_NAME, 2);
+        [$vendor, $package] = explode('/', self::COMPOSER_NAME, 2);
+
+        return [$vendor, $package];
     }
 
     /**

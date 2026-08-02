@@ -25,6 +25,8 @@ abstract class Encrypter
 
     abstract public function decrypt(?string $payload, bool $unserialize = true): mixed;
 
+    abstract public function isEncrypted(mixed $value): bool;
+
     protected function getEncryptionKey(): string
     {
         $key = $this->encryptableConfig->getKey();

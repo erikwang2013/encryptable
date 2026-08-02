@@ -26,6 +26,10 @@ class UniqueEncrypted implements Rule
         $this->rule = new Unique($table, $column);
     }
 
+    /**
+     * @param  array<int, mixed>  $arguments
+     * @return $this
+     */
     public function __call(string $name, array $arguments)
     {
         $this->forwardCallTo($this->rule, $name, $arguments);
@@ -46,6 +50,8 @@ class UniqueEncrypted implements Rule
 
     public function message(): string
     {
-        return __('validation.unique');
+        $msg = __('validation.unique');
+
+        return is_string($msg) ? $msg : 'validation.unique';
     }
 }

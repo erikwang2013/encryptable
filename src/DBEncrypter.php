@@ -15,6 +15,14 @@ use LogicException;
 /**
  * SQL decrypt helpers use the **primary** key only. Rotating DB-side ciphertext
  * requires re-encryption (e.g. read with PHP decrypt after migrating keys, or ALTER pipeline).
+ *
+ * ## Known limitation
+ *
+ * The SQL `decrypt()` fragment extracts the plaintext value by splitting on `:`.
+ * If the original value itself contains colon characters, the result may be
+ * truncated or incorrect. MySQL (`SUBSTRING_INDEX`) and PostgreSQL (`split_part`)
+ * behave differently in this edge case — avoid storing colon-containing values
+ * in encrypted columns queried via `Encryption::db()`.
  */
 class DBEncrypter extends Encrypter
 {
@@ -23,6 +31,11 @@ class DBEncrypter extends Encrypter
         protected DbDriverDetector $driverDetector
     ) {
         parent::__construct($encryptableConfig);
+    }
+
+    public function isEncrypted(mixed $value): bool
+    {
+        return false;
     }
 
     public function encrypt(mixed $value, bool $serialize = true): ?string

@@ -19,7 +19,7 @@ class Encryption
 
     private static ?EncryptableConfigContract $fallbackConfig = null;
 
-    /** @var null|callable(string): object */
+    /** @var null|callable(string): Encrypter */
     private static $resolver = null;
 
     private Encrypter $encrypter;
@@ -40,7 +40,7 @@ class Encryption
     }
 
     /**
-     * @param callable(string): object $resolver
+     * @param callable(string): Encrypter $resolver
      */
     public static function setResolver(callable $resolver): void
     {
@@ -92,7 +92,7 @@ class Encryption
         return $this->encrypter->rotateToCurrentKey($payload, $serialize);
     }
 
-    private static function resolve(string $abstract): object
+    private static function resolve(string $abstract): Encrypter
     {
         if (self::$resolver !== null) {
             return (self::$resolver)($abstract);
@@ -104,8 +104,8 @@ class Encryption
                 if ($hyperf->has($abstract)) {
                     return $hyperf->get($abstract);
                 }
-            } catch (\Throwable) {
-                // not in a Hyperf worker context
+            } catch (\RuntimeException) {
+                // Hyperf throws RuntimeException when not in a worker/coroutine context
             }
         }
 

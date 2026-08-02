@@ -1,0 +1,36 @@
+parameters:
+    level: 8
+    paths:
+        - src
+    excludePaths:
+        - src/Bridge/Hyperf/
+        - src/Bridge/ThinkPHP/
+        - src/Composer/
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Illuminate framework (not installed in dev; listed as suggest, not require-dev)
+        -
+            message: '#Class Illuminate\\.* not found#'
+            path: src/
+        -
+            message: '#Call to (static method|method) .* on an unknown class Illuminate#'
+            path: src/
+        -
+            message: '#Call to an undefined method .*::(mergeConfigFrom|publishes|singleton|has|bound|make|app|config_path|base_path|root_path)#'
+            path: src/
+
+        # Framework global functions (not in dev)
+        -
+            message: '#Function (app|config|base_path|config_path|root_path) not found#'
+
+        # base64_encode string|false check — PHP 8.x base64_encode still returns string|false,
+        # but PHPStan uses stubs where it never returns false for valid input
+        -
+            message: '#Strict comparison using === between (string and false|false and string) will always evaluate to false#'
+            path: src/PHPEncrypter.php
+
+        # CastsAttributes generic types (Illuminate not installed)
+        -
+            message: '#generic interface Illuminate\\Contracts\\Database\\Eloquent\\CastsAttributes#'
+            path: src/Encryptable.php

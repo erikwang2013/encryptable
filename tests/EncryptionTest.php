@@ -212,4 +212,126 @@ final class EncryptionTest extends TestCase
 
         self::assertStringStartsWith('string:', $raw);
     }
+
+    // ── Boolean false roundtrip ──
+
+    public function test_serializer_boolean_false_roundtrip(): void
+    {
+        $serialized = Serializer::serialize(false);
+        self::assertSame(false, Serializer::unserialize($serialized));
+        self::assertStringStartsWith('boolean:', $serialized);
+        self::assertSame('boolean:0', $serialized);
+    }
+
+    // ── AEAD (GCM) encryption ──
+
+    public function test_encrypt_and_decrypt_with_gcm_cipher(): void
+    {
+        $gcmKey = str_repeat('k', 32);
+        $gcmConfig = new KeyRingTestConfig($gcmKey, [], 'aes-256-gcm');
+        $encrypter = new PHPEncrypter($gcmConfig);
+
+        $plain = 'gcm-encrypted-value';
+        $encrypted = $encrypter->encrypt($plain);
+        self::assertIsString($encrypted);
+        self::assertNotSame($plain, $encrypted);
+        self::assertSame($plain, $encrypter->decrypt($encrypted));
+    }
+
+    public function test_gcm_encrypted_value_is_detected(): void
+    {
+        $gcmKey = str_repeat('k', 32);
+        $gcmConfig = new KeyRingTestConfig($gcmKey, [], 'aes-256-gcm');
+        $encrypter = new PHPEncrypter($gcmConfig);
+
+        $encrypted = $encrypter->encrypt('test');
+        self::assertTrue($encrypter->isEncrypted($encrypted));
+    }
+
+    // ── EncryptException ──
+
+    public function test_encrypt_throws_with_invalid_cipher(): void
+    {
+        $badConfig = new KeyRingTestConfig($this->key, [], 'invalid-cipher-algo');
+        $encrypter = new PHPEncrypter($badConfig);
+
+        $this->expectException(\Erikwang2013\Encryptable\Exceptions\EncryptException::class);
+        $encrypter->encrypt('test');
+    }
+
+    // ── MissingEncryptionCipherException ──
+
+    public function test_encrypt_throws_with_null_cipher(): void
+    {
+        $nullCipherConfig = new KeyRingTestConfig($this->key, [], null);
+        $encrypter = new PHPEncrypter($nullCipherConfig);
+
+        $this->expectException(\Erikwang2013\Encryptable\Exceptions\MissingEncryptionCipherException::class);
+        $encrypter->encrypt('test');
+    }
+
+    // ── DBEncrypter SQL output ──
+
+    public function test_db_decrypt_returns_mysql_fragment(): void
+    {
+        $mysqlDetector = new class implements \Erikwang2013\Encryptable\Contracts\DbDriverDetector {
+            public function isPostgres(): bool
+            {
+                return false;
+            }
+        };
+
+        $db = new \Erikwang2013\Encryptable\DBEncrypter($this->config, $mysqlDetector);
+        $sql = $db->decrypt('base64payload');
+
+        self::assertIsString($sql);
+        self::assertStringContainsString('AES_DECRYPT', $sql);
+        self::assertStringContainsString('FROM_BASE64', $sql);
+    }
+
+    public function test_db_decrypt_returns_postgres_fragment(): void
+    {
+        $pgDetector = new class implements \Erikwang2013\Encryptable\Contracts\DbDriverDetector {
+            public function isPostgres(): bool
+            {
+                return true;
+            }
+        };
+
+        $db = new \Erikwang2013\Encryptable\DBEncrypter($this->config, $pgDetector);
+        $sql = $db->decrypt('base64payload');
+
+        self::assertIsString($sql);
+        self::assertStringContainsString('decrypt', $sql);
+        self::assertStringContainsString('decode(', $sql);
+        self::assertStringContainsString("'base64'", $sql);
+    }
+
+    public function test_db_encrypt_throws(): void
+    {
+        $detector = new class implements \Erikwang2013\Encryptable\Contracts\DbDriverDetector {
+            public function isPostgres(): bool
+            {
+                return false;
+            }
+        };
+
+        $db = new \Erikwang2013\Encryptable\DBEncrypter($this->config, $detector);
+
+        $this->expectException(\LogicException::class);
+        $db->encrypt('test');
+    }
+
+    public function test_db_decrypt_null_returns_null(): void
+    {
+        $detector = new class implements \Erikwang2013\Encryptable\Contracts\DbDriverDetector {
+            public function isPostgres(): bool
+            {
+                return false;
+            }
+        };
+
+        $db = new \Erikwang2013\Encryptable\DBEncrypter($this->config, $detector);
+        self::assertNull($db->decrypt(null));
+    }
 }

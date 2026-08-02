@@ -362,6 +362,14 @@ composer format      # Laravel Pint
 
 ---
 
+## 开源不易，欢迎支持
+
+| 微信支付 | 支付宝 |
+|:---:|:---:|
+| <img src="./weixinpay.png" alt="微信支付" width="130" height="130" /> | <img src="./alipay.png" alt="支付宝" width="130" height="130" /> |
+
+---
+
 ## 许可证
 
 MIT。详见仓库内 `LICENSE.md`。

@@ -17,7 +17,7 @@ class EnvEncryptableConfig implements EncryptableConfigContract
     {
         $value = $_ENV['ENCRYPTION_KEY'] ?? $_SERVER['ENCRYPTION_KEY'] ?? getenv('ENCRYPTION_KEY');
 
-        if ($value === false || $value === null || $value === '') {
+        if ($value === false || $value === '') {
             return null;
         }
 
@@ -28,7 +28,7 @@ class EnvEncryptableConfig implements EncryptableConfigContract
     {
         $value = $_ENV['ENCRYPTION_CIPHER'] ?? $_SERVER['ENCRYPTION_CIPHER'] ?? getenv('ENCRYPTION_CIPHER');
 
-        if ($value === false || $value === null || $value === '') {
+        if ($value === false || $value === '') {
             return 'aes-256-gcm';
         }
 

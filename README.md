@@ -363,9 +363,9 @@ composer format      # Laravel Pint
 ---
 ## 开源不易，欢迎支持
 
-| 微信 | 支付宝 |
+| 微信支付 | 支付宝 |
 |:---:|:---:|
-| ![微信](./docs/weixinpay.png "微信") | ![支付宝](./docs/alipay.png "支付宝") |
+| <img src="./docs/weixinpay.png" alt="微信支付" width="130" height="130" /> | <img src="./docs/alipay.png" alt="支付宝" width="130" height="130" /> |
 
 ---
 

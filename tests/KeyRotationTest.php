@@ -79,7 +79,8 @@ final class KeyRingTestConfig implements EncryptableConfigContract
      */
     public function __construct(
         private string $key,
-        private array $previousKeys
+        private array $previousKeys,
+        private ?string $cipher = 'aes-128-ecb'
     ) {
     }
 
@@ -90,7 +91,7 @@ final class KeyRingTestConfig implements EncryptableConfigContract
 
     public function getCipher(): ?string
     {
-        return 'aes-128-ecb';
+        return $this->cipher;
     }
 
     public function getPreviousKeys(): array
