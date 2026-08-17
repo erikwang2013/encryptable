@@ -19,6 +19,9 @@ class Encryption
 
     private static ?EncryptableConfigContract $fallbackConfig = null;
 
+    /** @var array<string, Encrypter> Resolved instances keyed by abstract class name */
+    private static array $resolved = [];
+
     /** @var null|callable(string): Encrypter */
     private static $resolver = null;
 
@@ -32,11 +35,13 @@ class Encryption
     public static function setContainer(?ContainerInterface $container): void
     {
         self::$container = $container;
+        self::$resolved = [];
     }
 
     public static function setFallbackConfig(?EncryptableConfigContract $config): void
     {
         self::$fallbackConfig = $config;
+        self::$resolved = [];
     }
 
     /**
@@ -45,6 +50,7 @@ class Encryption
     public static function setResolver(callable $resolver): void
     {
         self::$resolver = $resolver;
+        self::$resolved = [];
     }
 
     public static function php(): self
@@ -93,6 +99,15 @@ class Encryption
     }
 
     private static function resolve(string $abstract): Encrypter
+    {
+        if (isset(self::$resolved[$abstract])) {
+            return self::$resolved[$abstract];
+        }
+
+        return self::$resolved[$abstract] = self::doResolve($abstract);
+    }
+
+    private static function doResolve(string $abstract): Encrypter
     {
         if (self::$resolver !== null) {
             return (self::$resolver)($abstract);

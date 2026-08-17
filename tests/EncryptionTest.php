@@ -248,14 +248,14 @@ final class EncryptionTest extends TestCase
         self::assertTrue($encrypter->isEncrypted($encrypted));
     }
 
-    // ── EncryptException ──
+    // ── Unsupported cipher (whitelist) ──
 
     public function test_encrypt_throws_with_invalid_cipher(): void
     {
         $badConfig = new KeyRingTestConfig($this->key, [], 'invalid-cipher-algo');
         $encrypter = new PHPEncrypter($badConfig);
 
-        $this->expectException(\Erikwang2013\Encryptable\Exceptions\EncryptException::class);
+        $this->expectException(\Erikwang2013\Encryptable\Exceptions\MissingEncryptionCipherException::class);
         $encrypter->encrypt('test');
     }
 
@@ -307,7 +307,7 @@ final class EncryptionTest extends TestCase
         self::assertStringContainsString("'base64'", $sql);
     }
 
-    public function test_db_encrypt_throws(): void
+    public function test_db_encrypt_returns_deterministic_ciphertext(): void
     {
         $detector = new class implements \Erikwang2013\Encryptable\Contracts\DbDriverDetector {
             public function isPostgres(): bool
@@ -318,8 +318,13 @@ final class EncryptionTest extends TestCase
 
         $db = new \Erikwang2013\Encryptable\DBEncrypter($this->config, $detector);
 
-        $this->expectException(\LogicException::class);
-        $db->encrypt('test');
+        $first = $db->encrypt('test', false);
+        $second = $db->encrypt('test', false);
+
+        self::assertIsString($first);
+        self::assertTrue($db->isEncrypted($first));
+        self::assertSame($first, $second); // ECB is deterministic
+        self::assertGreaterThanOrEqual(33, strlen((string) base64_decode($first, true)));
     }
 
     public function test_db_decrypt_null_returns_null(): void

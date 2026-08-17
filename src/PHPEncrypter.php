@@ -20,6 +20,9 @@ class PHPEncrypter extends Encrypter
     private const HMAC_LENGTH = 32;
     private const TAG_LENGTH = 16;
 
+    /** @var array<string, string> */
+    private static array $hmacKeyCache = [];
+
     public function encrypt(mixed $value, bool $serialize = true): ?string
     {
         if (is_null($value)) {
@@ -81,7 +84,7 @@ class PHPEncrypter extends Encrypter
         return $this->base64Encode(self::FORMAT_V1 . $iv . $ciphertext . $hmac);
     }
 
-    public function decrypt(?string $payload, bool $unserialize = true): mixed
+    public function decrypt(?string $payload, bool $unserialize = true, bool $strict = false): mixed
     {
         if (is_null($payload)) {
             return null;
@@ -89,13 +92,21 @@ class PHPEncrypter extends Encrypter
 
         try {
             $decoded = $this->base64Decode($payload);
-        } catch (DecryptException) {
+        } catch (DecryptException $e) {
+            if ($strict) {
+                throw $e;
+            }
+
             return $payload;
         }
 
         $plain = $this->tryOpenSSLDecrypt($decoded);
 
         if ($plain === null) {
+            if ($strict) {
+                throw new DecryptException('Decryption failed: invalid ciphertext or HMAC.');
+            }
+
             return $payload;
         }
 
@@ -121,7 +132,7 @@ class PHPEncrypter extends Encrypter
             return $payload;
         }
 
-        $plain = $this->decrypt($payload, $serialize);
+        $plain = $this->decrypt($payload, $serialize, true);
 
         return $this->encrypt($plain, $serialize);
     }
@@ -132,13 +143,23 @@ class PHPEncrypter extends Encrypter
             return false;
         }
 
-        try {
-            $decoded = $this->base64Decode($value);
-        } catch (DecryptException) {
+        $decoded = base64_decode($value, true);
+
+        // ponytail: format-only check (no HMAC/openssl work); a plaintext that
+        // happens to look like ciphertext (base64 + \x01/\x02 prefix) is treated
+        // as already encrypted — astronomically unlikely, acceptable. V0 (prefixless)
+        // legacy blobs are no longer flagged; rotateToCurrentKey skips them as-is.
+        if ($decoded === false || $decoded === '') {
             return false;
         }
 
-        return $this->tryOpenSSLDecrypt($decoded) !== null;
+        $version = $decoded[0];
+
+        if ($version !== self::FORMAT_V1 && $version !== self::FORMAT_V2) {
+            return false;
+        }
+
+        return strlen($decoded) >= 1 + self::HMAC_LENGTH + 1;
     }
 
     /**
@@ -229,24 +250,14 @@ class PHPEncrypter extends Encrypter
 
     protected function addDirtyBit(string $value): string
     {
-        $prefix = self::DIRTY_BIT_KEY;
-
-        if (! str_starts_with($value, $prefix)) {
-            return $prefix . $value;
-        }
-
-        return $value;
+        // Always prefix — trusting an existing prefix strips it on decrypt,
+        // corrupting round-trips of plaintext that itself starts with "crypt:".
+        return self::DIRTY_BIT_KEY . $value;
     }
 
     protected function base64Encode(string $value): string
     {
-        $encoded = base64_encode($value);
-
-        if ($encoded === false) {
-            throw new EncryptException('Base64 encoding failed.');
-        }
-
-        return $encoded;
+        return base64_encode($value);
     }
 
     protected function base64Decode(string $payload): string
@@ -276,6 +287,7 @@ class PHPEncrypter extends Encrypter
 
     private static function deriveHmacKey(string $encryptionKey): string
     {
-        return hash('sha256', $encryptionKey . ':hmac', true);
+        // Key is fixed for the process lifetime, so the hash is safe to memoize.
+        return self::$hmacKeyCache[$encryptionKey] ??= hash('sha256', $encryptionKey . ':hmac', true);
     }
 }
