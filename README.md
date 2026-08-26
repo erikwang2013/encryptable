@@ -61,7 +61,7 @@ Applications that handle personally identifiable information (PII), health recor
 
 | Item | Notes |
 |------|--------|
-| PHP | `^8.2` with the `openssl` extension |
+| PHP | `^8.0` with the `openssl` extension. Runtime supports PHP 8.0+; the dev toolchain (PHPUnit 11 / Pest / Larastan) requires PHP 8.2+ |
 | Databases | Docs and SQL helpers target **MySQL** and **PostgreSQL** (driver name is used to pick the dialect for `Encryption::db()`). |
 
 Packagist: **[erikwang2013/encryptable](https://packagist.org/packages/erikwang2013/encryptable)** (`name` in `composer.json`).

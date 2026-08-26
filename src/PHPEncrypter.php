@@ -220,7 +220,14 @@ class PHPEncrypter extends Encrypter
                 continue;
             }
 
-            $plain = openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
+            // Non-AEAD cipher + non-null $tag emits a PHP warning ("tag cannot be
+            // used because the cipher does not support AEAD"); HMAC already
+            // validated the payload, so a mismatch just falls through to null.
+            if ($this->isAeadCipher($cipher)) {
+                $plain = openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
+            } else {
+                $plain = openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv);
+            }
             if ($plain !== false && str_starts_with($plain, self::DIRTY_BIT_KEY)) {
                 return $plain;
             }

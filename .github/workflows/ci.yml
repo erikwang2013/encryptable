@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      # dev 工具链（phpunit 11/pest/larastan）要求 PHP 8.2+，8.0/8.1 兼容由 syntax-php80 job 验证
+      matrix:
+        php: [ '8.2', '8.3', '8.4' ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: openssl
+          coverage: none
+      - run: composer update --prefer-dist --no-interaction
+      - run: vendor/bin/phpunit
+      - run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+  syntax-php80:
+    # PHP 8.0 无法安装 dev 工具链（PHPUnit 10.5+/Illuminate 10+ 需 PHP 8.1+），
+    # 直接以 PHP 8.0 解析全部源码验证兼容性
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          extensions: openssl
+      - run: find src config -name '*.php' -exec php -l {} \;
+      - run: composer validate --no-check-publish

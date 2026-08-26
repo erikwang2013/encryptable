@@ -45,9 +45,9 @@ class Encryption
     }
 
     /**
-     * @param callable(string): Encrypter $resolver
+     * @param null|callable(string): Encrypter $resolver Passing null restores default fallback resolution.
      */
-    public static function setResolver(callable $resolver): void
+    public static function setResolver(?callable $resolver): void
     {
         self::$resolver = $resolver;
         self::$resolved = [];

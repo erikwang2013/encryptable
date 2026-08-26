@@ -22,7 +22,7 @@
     ],
     "type": "composer-plugin",
     "require": {
-        "php": "^8.2",
+        "php": "^8.0",
         "ext-openssl": "*",
         "composer-plugin-api": "^2.2",
         "psr/container": "^1.1|^2.0"

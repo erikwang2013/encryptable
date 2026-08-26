@@ -1,5 +1,7 @@
 parameters:
     level: 8
+    # Validate against PHP 8.0 (lowest supported version) to keep the codebase 8.0+ compatible
+    phpVersion: 80000
     paths:
         - src
     excludePaths:

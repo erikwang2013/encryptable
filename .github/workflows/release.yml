@@ -1,0 +1,45 @@
+name: Auto Release
+
+# 推送规则：push main 后获取最新版本号，增量创建 tag 和 release（不含打包步骤）
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Compute next version (latest + patch increment)
+        id: version
+        run: |
+          latest="$(git tag --sort=-v:refname | head -1)"
+          if [ -z "$latest" ]; then latest="v0.0.0"; fi
+          next="$(echo "${latest#v}" | awk -F. '{print $1"."$2"."$3+1}')"
+          echo "latest=${latest}" >> "$GITHUB_OUTPUT"
+          echo "next=v${next}" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.next }}"
+          git push origin "${{ steps.version.outputs.next }}"
+
+      - name: Create release
+        run: |
+          gh release create "${{ steps.version.outputs.next }}" \
+            --title "Release ${{ steps.version.outputs.next }}" \
+            --notes "Incremental release from latest (${{ steps.version.outputs.latest }})." \
+            --target main
