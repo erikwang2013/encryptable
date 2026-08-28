@@ -214,16 +214,16 @@ class PHPEncrypter extends Encrypter
         $hmac = substr($data, -self::HMAC_LENGTH);
         $ciphertext = substr($data, 1 + $ivLength + self::TAG_LENGTH, -self::HMAC_LENGTH);
 
+        // Non-AEAD cipher + non-null $tag emits a PHP warning, so omit the tag argument.
+        $aead = $this->isAeadCipher($cipher);
+
         foreach ($this->getDecryptionKeyRing() as $key) {
             $expectedHmac = hash_hmac(self::HMAC_ALGO, $iv . $tag . $ciphertext, self::deriveHmacKey($key), true);
             if (! hash_equals($expectedHmac, $hmac)) {
                 continue;
             }
 
-            // Non-AEAD cipher + non-null $tag emits a PHP warning ("tag cannot be
-            // used because the cipher does not support AEAD"); HMAC already
-            // validated the payload, so a mismatch just falls through to null.
-            if ($this->isAeadCipher($cipher)) {
+            if ($aead) {
                 $plain = openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv, $tag);
             } else {
                 $plain = openssl_decrypt($ciphertext, $cipher, $key, OPENSSL_RAW_DATA, $iv);

@@ -8,46 +8,10 @@ declare(strict_types=1);
 
 namespace Erikwang2013\Encryptable\Tests;
 
-use Erikwang2013\Encryptable\Contracts\EncryptableConfigContract;
 use Erikwang2013\Encryptable\Exceptions\MissingEncryptionCipherException;
 use Erikwang2013\Encryptable\Exceptions\MissingEncryptionKeyException;
 use Erikwang2013\Encryptable\PHPEncrypter;
 use PHPUnit\Framework\TestCase;
-
-/**
- * Mutable config so caching behavior of the abstract Encrypter base can be observed.
- */
-final class MutableKeyRingTestConfig implements EncryptableConfigContract
-{
-    public string $key;
-
-    /** @var list<string> */
-    public array $previousKeys;
-
-    public ?string $cipher;
-
-    public function __construct(string $key, array $previousKeys = [], ?string $cipher = 'aes-128-ecb')
-    {
-        $this->key = $key;
-        $this->previousKeys = $previousKeys;
-        $this->cipher = $cipher;
-    }
-
-    public function getKey(): ?string
-    {
-        return $this->key;
-    }
-
-    public function getCipher(): ?string
-    {
-        return $this->cipher;
-    }
-
-    public function getPreviousKeys(): array
-    {
-        return $this->previousKeys;
-    }
-}
 
 final class EncrypterTest extends TestCase
 {
@@ -165,7 +129,7 @@ final class EncrypterTest extends TestCase
 
     public function test_key_and_cipher_are_cached_after_first_use(): void
     {
-        $config = new MutableKeyRingTestConfig(str_repeat('a', 16), [], 'aes-128-ecb');
+        $config = new KeyRingTestConfig(str_repeat('a', 16), [], 'aes-128-ecb');
         $encrypter = new PHPEncrypter($config);
 
         $payload = $encrypter->encrypt('cached', true);
@@ -180,7 +144,7 @@ final class EncrypterTest extends TestCase
     public function test_decryption_ring_is_cached_after_first_use(): void
     {
         $old = str_repeat('o', 16);
-        $config = new MutableKeyRingTestConfig(str_repeat('n', 16), [$old], 'aes-128-ecb');
+        $config = new KeyRingTestConfig(str_repeat('n', 16), [$old], 'aes-128-ecb');
         $encrypter = new PHPEncrypter($config);
 
         $payload = (new PHPEncrypter(new KeyRingTestConfig($old, [])))->encrypt('ring-cache', true);

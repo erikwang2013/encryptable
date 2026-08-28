@@ -19,11 +19,9 @@ use Erikwang2013\Encryptable\PHPEncrypter;
 use Erikwang2013\Encryptable\Rules\ExistsEncrypted;
 use Erikwang2013\Encryptable\Rules\UniqueEncrypted;
 use Illuminate\Config\Repository;
-use Illuminate\Container\Container;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Validation\Rule;
-use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
 
 final class ServiceProviderTest extends TestCase
@@ -44,9 +42,7 @@ final class ServiceProviderTest extends TestCase
 
     protected function tearDown(): void
     {
-        Container::setInstance(new Container);
-        Facade::setFacadeApplication(null);
-        Facade::clearResolvedInstances();
+        $this->resetContainers();
         array_map('unlink', glob($this->basePath . '/config/encryptable.php') ?: []);
         @rmdir($this->basePath . '/config');
         @rmdir($this->basePath);

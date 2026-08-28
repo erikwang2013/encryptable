@@ -8,7 +8,6 @@ declare(strict_types=1);
 
 namespace Erikwang2013\Encryptable\Tests;
 
-use Erikwang2013\Encryptable\Contracts\EncryptableConfigContract;
 use Erikwang2013\Encryptable\Encryption;
 use Erikwang2013\Encryptable\PHPEncrypter;
 use Erikwang2013\Encryptable\Support\PreviousKeysParser;
@@ -69,33 +68,5 @@ final class KeyRotationTest extends TestCase
         $out = Encryption::php()->rotateToCurrentKey($blob, true);
 
         self::assertSame('ping', Encryption::php()->decrypt($out, true));
-    }
-}
-
-final class KeyRingTestConfig implements EncryptableConfigContract
-{
-    /**
-     * @param  list<string>  $previousKeys
-     */
-    public function __construct(
-        private string $key,
-        private array $previousKeys,
-        private ?string $cipher = 'aes-128-ecb'
-    ) {
-    }
-
-    public function getKey(): ?string
-    {
-        return $this->key;
-    }
-
-    public function getCipher(): ?string
-    {
-        return $this->cipher;
-    }
-
-    public function getPreviousKeys(): array
-    {
-        return $this->previousKeys;
     }
 }

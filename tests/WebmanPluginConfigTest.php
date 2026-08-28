@@ -13,15 +13,12 @@ use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Facade;
-use PHPUnit\Framework\TestCase;
 
 final class WebmanPluginConfigTest extends TestCase
 {
     protected function tearDown(): void
     {
-        Container::setInstance(new Container);
-        Facade::setFacadeApplication(null);
-        Facade::clearResolvedInstances();
+        $this->resetContainers();
         parent::tearDown();
     }
 

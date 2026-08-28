@@ -16,7 +16,6 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Facade;
-use PHPUnit\Framework\TestCase;
 
 final class BridgeLaravelTest extends TestCase
 {
@@ -36,9 +35,7 @@ final class BridgeLaravelTest extends TestCase
 
     protected function tearDown(): void
     {
-        Container::setInstance(new Container);
-        Facade::setFacadeApplication(null);
-        Facade::clearResolvedInstances();
+        $this->resetContainers();
         parent::tearDown();
     }
 

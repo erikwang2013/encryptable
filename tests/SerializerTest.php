@@ -42,8 +42,8 @@ final class SerializerTest extends TestCase
             try {
                 Serializer::serialize($value);
                 self::fail('Expected SerializationException for ' . gettype($value) . '.');
-            } catch (SerializationException) {
-                self::assertTrue(true);
+            } catch (SerializationException $e) {
+                self::assertInstanceOf(SerializationException::class, $e);
             }
         }
     }
@@ -55,8 +55,8 @@ final class SerializerTest extends TestCase
         try {
             Serializer::serialize($resource);
             self::fail('Expected SerializationException for resource.');
-        } catch (SerializationException) {
-            self::assertTrue(true);
+        } catch (SerializationException $e) {
+            self::assertInstanceOf(SerializationException::class, $e);
         } finally {
             fclose($resource);
         }
@@ -74,8 +74,8 @@ final class SerializerTest extends TestCase
             try {
                 Serializer::unserialize($payload);
                 self::fail("Expected UnserializationException for [{$payload}].");
-            } catch (UnserializationException) {
-                self::assertTrue(true);
+            } catch (UnserializationException $e) {
+                self::assertInstanceOf(UnserializationException::class, $e);
             }
         }
     }

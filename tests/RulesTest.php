@@ -19,7 +19,6 @@ use Illuminate\Translation\Translator;
 use Illuminate\Validation\Factory;
 use Illuminate\Validation\PresenceVerifierInterface;
 use LogicException;
-use PHPUnit\Framework\TestCase;
 
 /**
  * Captures the data passed to Validator::make() so the tests can assert the
@@ -108,9 +107,7 @@ final class RulesTest extends TestCase
         Encryption::setFallbackConfig(null);
         Encryption::setContainer(null);
         Encryption::setResolver(null);
-        Container::setInstance(new Container);
-        Facade::setFacadeApplication(null);
-        Facade::clearResolvedInstances();
+        $this->resetContainers();
         parent::tearDown();
     }
 

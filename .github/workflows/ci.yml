@@ -20,6 +20,7 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: openssl
           coverage: none
+          cache: composer
       - run: composer update --prefer-dist --no-interaction
       - run: vendor/bin/phpunit
       - run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
