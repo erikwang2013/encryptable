@@ -31,6 +31,8 @@ jobs:
           echo "next=v${next}" >> "$GITHUB_OUTPUT"
 
       - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ steps.version.outputs.next }}" \
             --title "Release ${{ steps.version.outputs.next }}" \
