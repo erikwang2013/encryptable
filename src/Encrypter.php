@@ -11,6 +11,8 @@ namespace Erikwang2013\Encryptable;
 use Erikwang2013\Encryptable\Contracts\EncryptableConfigContract;
 use Erikwang2013\Encryptable\Exceptions\MissingEncryptionCipherException;
 use Erikwang2013\Encryptable\Exceptions\MissingEncryptionKeyException;
+use Erikwang2013\Encryptable\Exceptions\SerializationException;
+use Erikwang2013\Encryptable\Utils\Serializer;
 
 abstract class Encrypter
 {
@@ -102,6 +104,32 @@ abstract class Encrypter
         }
 
         return $this->cachedCipher;
+    }
+
+    /**
+     * 待加密的明文字节串：{@code $serialize} 为 true 时走 {@see Serializer} 信封；
+     * 为 false 时要求标量/字符串（数组与对象必须先序列化，否则抛出明确异常而不是 TypeError）。
+     *
+     * `$serialize = false` 用于需要按明文等值比较的列，因此这里不做任何隐式包装。
+     */
+    protected function preparePlaintext(mixed $value, bool $serialize): string
+    {
+        if ($serialize) {
+            return Serializer::serialize($value);
+        }
+
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_scalar($value) || $value instanceof \Stringable) {
+            return (string) $value;
+        }
+
+        throw new SerializationException(
+            'Values of type '.get_debug_type($value).' need the serialization envelope;'
+            .' pass $serialize = true (arrays and objects cannot be encrypted with $serialize = false).'
+        );
     }
 
     /**

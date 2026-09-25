@@ -76,14 +76,12 @@ class DBEncrypter extends Encrypter
             return $value;
         }
 
-        if ($serialize) {
-            $value = Serializer::serialize($value);
-        }
+        $plain = $this->preparePlaintext($value, $serialize);
 
         $key = $this->getEncryptionKey();
-        $hmac = hash_hmac(self::HMAC_ALGO, $value, self::deriveHmacKey($key), true);
+        $hmac = hash_hmac(self::HMAC_ALGO, $plain, self::deriveHmacKey($key), true);
 
-        $ciphertext = openssl_encrypt($value, $this->getEcbCipher(), $key, OPENSSL_RAW_DATA);
+        $ciphertext = openssl_encrypt($plain, $this->getEcbCipher(), $key, OPENSSL_RAW_DATA);
         if ($ciphertext === false) {
             throw new EncryptException(
                 'OpenSSL encryption failed: ' . (openssl_error_string() ?: 'unknown error')

@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 860" role="img" aria-labelledby="lifeTitle lifeDesc"
+     font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif">
+  <title id="lifeTitle">Encryptable 生命周期 / lifecycle</title>
+  <desc id="lifeDesc">Three lifecycles: the value lifecycle (write encrypts, read decrypts), the query lifecycle (deterministic encryption enables equality lookups), and the key-rotation lifecycle (new primary key, previous_keys ring, gradual re-encryption, retirement).</desc>
+
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4338CA"/>
+    </marker>
+    <style>
+      .panel { fill: #FFFFFF; stroke: #C7D2FE; stroke-width: 1.6 }
+      .step  { fill: #F2F5FF; stroke: #C7D2FE; stroke-width: 1.4 }
+      .t1    { font-size: 12.5px; font-weight: 700; fill: #1E1B4B; text-anchor: middle }
+      .t2    { font-size: 10px; fill: #64748B; text-anchor: middle }
+      .h     { font-size: 15px; font-weight: 700; fill: #1E1B4B }
+      .sub   { font-size: 11px; fill: #64748B }
+      .lbl   { font-size: 10px; font-weight: 700; fill: #4338CA; letter-spacing: 1.2px }
+      .fl    { stroke: #4338CA; stroke-width: 2.2; marker-end: url(#ar) }
+      .note  { font-size: 11px; fill: #64748B }
+      .pill  { fill: #F2F5FF; stroke: #C7D2FE; stroke-width: 1.4 }
+      .pt    { font-size: 11.5px; font-weight: 700; fill: #3730A3; text-anchor: middle }
+      .ps    { font-size: 9.5px; fill: #64748B; text-anchor: middle }
+    </style>
+  </defs>
+
+  <rect width="1160" height="860" rx="28" fill="#F7F9FF" stroke="#E0E7FF" stroke-width="1.5"/>
+  <text x="60" y="68" font-size="26" font-weight="700" fill="#312E81">Encryptable · 生命周期 / Lifecycle</text>
+  <text x="60" y="96" font-size="13" fill="#64748B">三段生命周期：值写入与读取的往返、加密列的查询路径、密钥从启用到退役的轮换。</text>
+
+  <!-- ================= A. data lifecycle ================= -->
+  <rect class="panel" x="60" y="126" width="1040" height="256" rx="20"/>
+  <rect x="76" y="146" width="6" height="22" rx="3" fill="#4338CA"/>
+  <text class="h" x="96" y="164">数据生命周期 / Data lifecycle</text>
+  <text class="sub" x="96" y="184">写入路径加密、读取路径解密，两者严格对称（PHPEncrypter，密钥环解密）。</text>
+
+  <text class="lbl" x="100" y="208">写入 / WRITE</text>
+  <rect class="step" x="100" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="170" y="244">明文</text><text class="t2" x="170" y="262">原始值 plaintext</text>
+  <path class="fl" d="M244 248 h16"/>
+  <rect class="step" x="264" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="334" y="244">序列化</text><text class="t2" x="334" y="262">Serializer 信封</text>
+  <path class="fl" d="M408 248 h16"/>
+  <rect class="step" x="428" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="498" y="244">加脏位</text><text class="t2" x="498" y="262">前缀「crypt:」</text>
+  <path class="fl" d="M572 248 h16"/>
+  <rect class="step" x="592" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="662" y="244">AEAD 加密</text><text class="t2" x="662" y="262">随机 IV · aes-256-gcm</text>
+  <path class="fl" d="M736 248 h16"/>
+  <rect class="step" x="756" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="826" y="244">HMAC 校验码</text><text class="t2" x="826" y="262">sha256 完整性</text>
+  <path class="fl" d="M900 248 h16"/>
+  <rect class="step" x="920" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="990" y="244">base64 入库</text><text class="t2" x="990" y="262">写入加密列</text>
+
+  <text class="lbl" x="100" y="306">读取 / READ</text>
+  <rect class="step" x="100" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="170" y="342">读取密文</text><text class="t2" x="170" y="360">自加密列读出</text>
+  <path class="fl" d="M244 346 h16"/>
+  <rect class="step" x="264" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="334" y="342">base64 解码</text><text class="t2" x="334" y="360">严格模式解码</text>
+  <path class="fl" d="M408 346 h16"/>
+  <rect class="step" x="428" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="498" y="342">HMAC 校验</text><text class="t2" x="498" y="360">密钥环逐把比对</text>
+  <path class="fl" d="M572 346 h16"/>
+  <rect class="step" x="592" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="662" y="342">解密</text><text class="t2" x="662" y="360">主密钥或旧密钥</text>
+  <path class="fl" d="M736 346 h16"/>
+  <rect class="step" x="756" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="826" y="342">去脏位</text><text class="t2" x="826" y="360">校验「crypt:」标记</text>
+  <path class="fl" d="M900 346 h16"/>
+  <rect class="step" x="920" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="990" y="342">unserialize</text><text class="t2" x="990" y="360">还原原始值</text>
+
+  <!-- ================= B. query lifecycle ================= -->
+  <rect class="panel" x="60" y="406" width="1040" height="176" rx="20"/>
+  <rect x="76" y="426" width="6" height="22" rx="3" fill="#0D9488"/>
+  <text class="h" x="96" y="444">查询生命周期 / Query lifecycle</text>
+  <text class="sub" x="96" y="464">确定性加密（DBEncrypter，aes-256-ecb）让密文列可以参与等值查询与唯一校验。</text>
+
+  <rect class="step" x="100" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="170" y="506">原值输入</text><text class="t2" x="170" y="524">表单 / 请求参数</text>
+  <path class="fl" d="M244 510 h16"/>
+  <rect class="step" x="264" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="334" y="506">确定性加密</text><text class="t2" x="334" y="524">aes-128/256-ecb</text>
+  <path class="fl" d="M408 510 h16"/>
+  <rect class="step" x="428" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="498" y="506">WHERE 等值</text><text class="t2" x="498" y="524">或唯一索引匹配</text>
+  <path class="fl" d="M572 510 h16"/>
+  <rect class="step" x="592" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="662" y="506">数据库执行</text><text class="t2" x="662" y="524">密文列直接比较</text>
+  <path class="fl" d="M736 510 h16"/>
+  <rect class="step" x="756" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="826" y="506">命中密文</text><text class="t2" x="826" y="524">返回目标行</text>
+  <path class="fl" d="M900 510 h16"/>
+  <rect class="step" x="920" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="990" y="506">解密返回</text><text class="t2" x="990" y="524">走读取路径</text>
+
+  <text class="note" x="100" y="566">⚠ 非确定性算法（gcm / cbc）下等值查询与唯一校验不可用；模糊查询、范围查询在任何算法下都不适用，请改用哈希列或额外索引列。</text>
+
+  <!-- ================= C. key rotation lifecycle ================= -->
+  <rect class="panel" x="60" y="600" width="1040" height="224" rx="20"/>
+  <rect x="76" y="620" width="6" height="22" rx="3" fill="#B45309"/>
+  <text class="h" x="96" y="638">密钥轮换生命周期 / Key rotation lifecycle</text>
+  <text class="sub" x="96" y="658">任意一步都可回滚：旧密钥只要仍在解密环内，历史密文就仍可读。仅 Encryption::php() 路径支持。</text>
+
+  <rect class="step" x="100" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="170" y="698">生成新主密钥</text><text class="t2" x="170" y="716">ENCRYPTION_KEY</text>
+  <path class="fl" d="M244 702 h16"/>
+  <rect class="step" x="264" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="334" y="698">旧密钥下沉</text><text class="t2" x="334" y="716">追加 previous_keys</text>
+  <path class="fl" d="M408 702 h16"/>
+  <rect class="step" x="428" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="498" y="698">部署</text><text class="t2" x="498" y="716">双密钥并存解密</text>
+  <path class="fl" d="M572 702 h16"/>
+  <rect class="step" x="592" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="662" y="698">灰度重加密</text><text class="t2" x="662" y="716">rotateToCurrentKey()</text>
+  <path class="fl" d="M736 702 h16"/>
+  <rect class="step" x="756" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="826" y="698">移除旧密钥</text><text class="t2" x="826" y="716">清空 previous_keys</text>
+  <path class="fl" d="M900 702 h16"/>
+  <rect class="step" x="920" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="990" y="698">轮换完成</text><text class="t2" x="990" y="716">仅保留主密钥</text>
+
+  <text class="lbl" x="100" y="762">主密钥状态 / KEY STATES</text>
+  <rect class="pill" x="140" y="772" width="170" height="40" rx="12"/>
+  <text class="pt" x="225" y="790">待用 pending</text><text class="ps" x="225" y="804">尚未启用</text>
+  <path class="fl" d="M314 792 h38"/>
+  <rect class="pill" x="360" y="772" width="170" height="40" rx="12"/>
+  <text class="pt" x="445" y="790">主用 primary</text><text class="ps" x="445" y="804">新密文使用</text>
+  <path class="fl" d="M534 792 h38"/>
+  <rect class="pill" x="580" y="772" width="170" height="40" rx="12"/>
+  <text class="pt" x="665" y="790">解密环 previous_keys</text><text class="ps" x="665" y="804">只读解密历史密文</text>
+  <path class="fl" d="M754 792 h38"/>
+  <rect class="pill" x="800" y="772" width="170" height="40" rx="12"/>
+  <text class="pt" x="885" y="790">退役 retired</text><text class="ps" x="885" y="804">从环中移除</text>
+</svg>

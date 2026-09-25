@@ -16,6 +16,7 @@ use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginInterface;
+use Erikwang2013\Encryptable\Support\Mascot;
 use Erikwang2013\Encryptable\Support\PackagePluginPaths;
 
 /**
@@ -112,7 +113,8 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
 
         if (! $publishPluginApp && ! $publishHyperfPlugin) {
             $io->write(sprintf(
-                '<comment>[%s]</comment> Skipped auto config: no supported framework detected (checked Composer local repository, composer.lock, composer.json, and project layout). Copy files manually (see README).',
+                '<comment>[%s]</comment> Skipped auto config: no supported framework detected (checked Composer local repository, composer.lock, composer.json, and project layout). '
+                .'Plain PHP needs no config file: call <comment>Encryption::configure([...])</comment> or set <comment>ENCRYPTION_KEY</comment> / <comment>ENCRYPTION_CIPHER</comment> (see README → Native PHP).',
                 PackagePluginPaths::COMPOSER_NAME
             ));
 
@@ -149,6 +151,8 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
                 ));
             }
         }
+
+        $io->write(Mascot::ascii());
     }
 
     /**

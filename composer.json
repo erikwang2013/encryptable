@@ -1,6 +1,6 @@
 {
     "name": "erikwang2013/encryptable",
-    "description": "Encryptable Eloquent casts and helpers for PHP 8.2+ with Laravel 10–12 / Webman (Illuminate), Hyperf 2–3, and ThinkPHP 6–8 bridges.",
+    "description": "Encryptable Eloquent casts and helpers for PHP 8.0+: Laravel 10–12 / Webman (Illuminate), Hyperf 2–3, ThinkPHP 6–8 bridges, and plain native PHP without a framework.",
     "keywords": [
         "laravel",
         "webman",
@@ -75,6 +75,7 @@
         }
     },
     "suggest": {
+        "ext-pdo": "Optional: native-PHP (framework-free) dialect detection for Encryption::db() via new EnvDbDriverDetector(null, $pdo); ENCRYPTION_DB_DRIVER or Encryption::configure(['db_driver' => …]) covers the same ground without PDO.",
         "laravel/framework": "Laravel 10–12: auto-discovery registers EncryptableServiceProvider.",
         "illuminate/database": "Required with illuminate/support and illuminate/validation for Laravel/Webman integration.",
         "illuminate/support": "Required for EncryptableServiceProvider and validation rule macros.",

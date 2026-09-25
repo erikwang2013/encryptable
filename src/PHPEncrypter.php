@@ -33,11 +33,7 @@ class PHPEncrypter extends Encrypter
             return $value;
         }
 
-        if ($serialize) {
-            $value = Serializer::serialize($value);
-        }
-
-        $value = $this->addDirtyBit($value);
+        $value = $this->addDirtyBit($this->preparePlaintext($value, $serialize));
 
         $cipher = $this->getEncryptionCipher();
         $ivLength = openssl_cipher_iv_length($cipher);

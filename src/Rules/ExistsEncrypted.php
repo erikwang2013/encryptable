@@ -36,7 +36,7 @@ class ExistsEncrypted implements Rule
      */
     private function assertDeterministicCipher(): void
     {
-        $cipher = function_exists('config') && app()->bound('config')
+        $cipher = function_exists('config') && function_exists('app') && app()->bound('config')
             ? (string) config('encryptable.cipher', 'aes-256-gcm')
             : (string) (new EnvEncryptableConfig)->getCipher();
 

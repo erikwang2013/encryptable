@@ -45,11 +45,14 @@ final class EncryptionFacadeTest extends TestCase
         self::assertSame('fallback', Encryption::php()->decrypt($encrypted));
     }
 
-    public function test_db_resolution_fails_without_any_binding(): void
+    public function test_db_resolves_natively_without_any_binding(): void
     {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessageMatches('/Unable to resolve/');
-        Encryption::db();
+        Encryption::setFallbackConfig($this->config);
+
+        $sql = Encryption::db()->decrypt('phone');
+
+        self::assertStringContainsString('AES_DECRYPT', $sql);
+        self::assertStringContainsString('FROM_BASE64(phone)', $sql);
     }
 
     public function test_php_fallback_without_config_uses_env(): void

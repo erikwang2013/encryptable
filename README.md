@@ -4,7 +4,9 @@
 
 # Encryptable (`erikwang2013/encryptable`)
 
-On **PHP 8.2+**, this package helps you **anonymize / encrypt sensitive attributes in a query-friendly way**: values are encrypted before persistence and decrypted when read through Eloquent (or manual APIs). It can also emit **MySQL / PostgreSQL**-compatible SQL fragments so you can compare or search against encrypted columns in raw queries.
+<img src="./docs/pet.svg" alt="Locky · 小锁灵 — the Encryptable project pet" width="150" align="right" />
+
+On **PHP 8.0+** (dev toolchain: 8.2+), this package helps you **anonymize / encrypt sensitive attributes in a query-friendly way**: values are encrypted before persistence and decrypted when read through Eloquent (or manual APIs). It can also emit **MySQL / PostgreSQL**-compatible SQL fragments so you can compare or search against encrypted columns in raw queries. Frameworks are optional — the same two crypto paths run in **plain native PHP** via `Encryption::configure()` or environment variables.
 
 This repository evolves from the ideas and behaviour of **[laravel-encryptable](https://github.com/maize-tech/laravel-encryptable)** (Maize Tech). For the original design, issues, and releases, refer to that upstream project.
 
@@ -20,7 +22,7 @@ Applications that handle personally identifiable information (PII), health recor
 
 - **Dual crypto path** — `Encryption::php()` for application-level encrypt/decrypt (OpenSSL, the same path Eloquent casts use), and `Encryption::db()` for generating SQL fragments that decrypt inside the database engine. The two paths share the same key and cipher config.
 - **Authenticated encryption by default** — the default cipher `aes-256-gcm` provides confidentiality and integrity via AEAD. If deterministic encryption is needed (required for `UniqueEncrypted` / `ExistsEncrypted` validation rules), switch to `aes-128-ecb` (identical plaintext → identical ciphertext) or another non-AEAD cipher.
-- **Container-agnostic resolution** — `Encryption::resolve()` probes Hyperf, Laravel, and a user-supplied PSR-11 container; when none is available it falls back to `ENCRYPTION_KEY` / `ENCRYPTION_CIPHER` env vars. Framework bridges exist for **Laravel 10–12**, **Webman** (Illuminate), **Hyperf 2–3**, and **ThinkPHP 6–8**.
+- **Container-agnostic resolution** — `Encryption::resolve()` probes Hyperf, Laravel, and a user-supplied PSR-11 container; when none is available it falls back to `Encryption::configure([...])`, then to the `ENCRYPTION_KEY` / `ENCRYPTION_CIPHER` env vars. Framework bridges exist for **Laravel 10–12**, **Webman** (Illuminate), **Hyperf 2–3**, and **ThinkPHP 6–8**; **plain PHP** needs no bridge at all.
 - **Zero-downtime key rotation** — a primary key + `previous_keys` ring lets you rotate secrets without a big-bang re-encrypt. `rotateToCurrentKey()` provides gradual ciphertext migration under live traffic.
 
 ### What this fork adds (beyond upstream `laravel-encryptable`)
@@ -43,17 +45,99 @@ Applications that handle personally identifiable information (PII), health recor
 | You ship to multiple PHP frameworks and want one encryption contract. | You only target one framework and prefer its native encryption (e.g. Laravel's built-in `encrypted` cast). |
 | You need to rotate encryption keys with zero downtime. | Your threat model requires per-row IVs/nonces and HMAC authentication. |
 
+### Project pet: Locky · 小锁灵
+
+<div align="center"><img src="./docs/pet.svg" alt="Locky · 小锁灵" width="150" /></div>
+
+**Locky** is the pet of this package, and it is drawn from the design rather than bolted onto it: the **amber key** on its ring is the current primary key, and the **two grey keys** are `previous_keys` — still on the ring, still able to decrypt old ciphertext, until you retire them. That is the key-rotation model below, as a mascot.
+
+It ships as part of the code, not only as documentation:
+
+| Call | Returns |
+|------|---------|
+| `Encryption::mascot()` / `Mascot::svg()` | The raw `docs/pet.svg` markup (`''` if `docs/` is not shipped). |
+| `Mascot::dataUri()` | `data:image/svg+xml;base64,…` — drop straight into `<img src>`. |
+| `Mascot::ascii()` | A monospace pet for CLI output (the Composer plugin prints it on install). |
+| `Mascot::NAME` | `'Locky · 小锁灵'`. |
+
+```php
+use Erikwang2013\Encryptable\Encryption;
+
+echo Encryption::mascot();   // SVG markup for an admin page or error screen
+```
+
+Purely decorative: no pet method touches keys, ciphers or payloads.
+
 ---
 
 ## Features
+
+![Feature design: transparent cast, dual crypto paths, queryable ciphertext, key rotation, framework bridges, install-time config](./docs/features.svg)
 
 - **Eloquent custom cast**: use `Encryptable::class` in `$casts` for transparent encrypt/decrypt on attributes.
 - **PHP-side crypto**: `Encryption::php()->encrypt()` / `decrypt()` for CLI, queues, or non-model code paths.
 - **DB expressions**: `Encryption::db()->decrypt()` returns a SQL snippet (MySQL vs Postgres branches) suitable for `whereRaw`-style comparisons against stored ciphertext.
 - **Validation**: `UniqueEncrypted`, `ExistsEncrypted`, and `Rule::uniqueEncrypted()` / `Rule::existsEncrypted()` macros (requires `illuminate/validation`).
-- **Multi-runtime bridges**: Laravel **10–12**, Illuminate-based **Webman**, **Hyperf 2–3**, and **ThinkPHP 6–8** each register container/config in their own way; without a full container, `Encryption::php()` can fall back to **`ENCRYPTION_KEY`**, **`ENCRYPTION_CIPHER`**, and optional **`ENCRYPTION_PREVIOUS_KEYS`** (see the **Supported frameworks** table below).
+- **Multi-runtime bridges + native PHP**: Laravel **10–12**, Illuminate-based **Webman**, **Hyperf 2–3**, and **ThinkPHP 6–8** each register container/config in their own way. With **no framework at all**, `Encryption::configure(['key' => …])` or the env vars **`ENCRYPTION_KEY`**, **`ENCRYPTION_CIPHER`**, optional **`ENCRYPTION_PREVIOUS_KEYS`** and **`ENCRYPTION_DB_DRIVER`** drive both `Encryption::php()` and `Encryption::db()` (see **Supported frameworks → Native PHP**).
 - **Composer install hook**: this package is a **Composer plugin**; on `composer require` / `composer update`, it inspects **`vendor/composer/installed.php`**, lock, manifest, and **project layout** to publish config for the stack in use (see **Installation → Composer plugin**).
 - **Key rotation (`Encryption::php()` only)**: primary + `previous_keys` / `ENCRYPTION_PREVIOUS_KEYS` decryption ring, optional `rotateToCurrentKey()` for gradual re-encryption — full behavior and rollout are documented under **Configuration → Key rotation**.
+
+---
+
+## Architecture
+
+![Architecture: application layer, facade, encrypters, contracts, bridges, runtime](./docs/architecture.svg)
+
+Every entry point — the Eloquent cast, a validation rule, or a manual `Encryption::php()` call — goes through the same static facade. The facade resolves a **`PHPEncrypter`** (application-level AEAD) or a **`DBEncrypter`** (deterministic ciphertext plus SQL decrypt fragments) from the framework container, or from environment variables when no container is available. Bridges only provide config and container bindings: the crypto core itself has no framework dependency (runtime `require` is just `php`, `ext-openssl`, `psr/container`).
+
+### Lifecycle
+
+![Lifecycle: value round-trip, encrypted-column query path, key rotation](./docs/lifecycle.svg)
+
+- **Data** — write and read are strictly symmetric: `serialize → dirty bit → random IV + AEAD → HMAC → base64` on the way in, and the exact reverse on the way out. Any key still on the ring can decrypt.
+- **Query** — only deterministic ciphers (`aes-*-ecb`) can be compared inside the database engine; fuzzy and range lookups never work against ciphertext, whatever the cipher.
+- **Key rotation** — a key walks `pending → primary → previous_keys → retired`. Rollback is safe at any step while the old key is still on the ring.
+
+---
+
+## Project structure
+
+```text
+encryptable/
+├── src/
+│   ├── Encryption.php                  # static facade: php() · db() · isEncrypted() · rotateToCurrentKey() · mascot()
+│   ├── Encrypter.php                   # abstract base: key/cipher validation, decryption key ring
+│   ├── PHPEncrypter.php                # application path: AEAD + HMAC, random IV, \x01/\x02 payload formats
+│   ├── DBEncrypter.php                 # DB path: deterministic AES-ECB + SQL decrypt fragments
+│   ├── Encryptable.php                 # Eloquent cast (CastsAttributes)
+│   ├── EncryptableServiceProvider.php  # Laravel/Webman provider: publishes config, registers validation macros
+│   ├── Config/                         # ArrayEncryptableConfig · EnvEncryptableConfig · EnvDbDriverDetector (native PHP)
+│   ├── Contracts/                      # EncryptableConfigContract · DbDriverDetector
+│   ├── Exceptions/                     # Decrypt · Encrypt · MissingKey · MissingCipher · (Un)Serialization
+│   ├── Rules/                          # UniqueEncrypted · ExistsEncrypted
+│   ├── Support/                        # PackagePluginPaths · PreviousKeysParser · Mascot (the pet)
+│   ├── Utils/Serializer.php            # serialization envelope shared by both encrypters
+│   ├── Bridge/
+│   │   ├── Laravel/                    # Illuminate config + DB driver detector
+│   │   ├── Webman/                     # native Webman plugin config reader
+│   │   ├── Hyperf/                     # ConfigProvider, config, DB driver detector
+│   │   └── ThinkPHP/                   # ThinkphpEncryptable::register(), config, PSR-11 adapter
+│   └── Composer/Plugin.php             # install/update hook: publishes config for the detected stack
+├── config/
+│   ├── encryptable.php                 # legacy flat config (still merged)
+│   └── stubs/                          # plugin-app · webman-plugin-app · hyperf-plugin-autoload · hyperf-autoload-encryptable
+├── docs/
+│   ├── pet.svg                         # Locky · 小锁灵 — the project pet
+│   ├── architecture.svg                # architecture diagram
+│   ├── features.svg                    # feature design
+│   ├── lifecycle.svg                   # value / query / key-rotation lifecycles
+│   └── README.zh-CN.md                 # Chinese README
+├── tests/                              # 19 PHPUnit test classes (cast, encrypters, key ring, bridges, native PHP, rules, config)
+├── .github/workflows/                  # ci.yml (PHP 8.2–8.4 + PHP 8.0 syntax check) · release.yml
+├── composer.json                       # composer-plugin entry point + framework metadata
+├── phpstan.neon.dist · phpunit.xml
+└── README.md
+```
 
 ---
 
@@ -61,8 +145,9 @@ Applications that handle personally identifiable information (PII), health recor
 
 | Item | Notes |
 |------|--------|
-| PHP | `^8.0` with the `openssl` extension. Runtime supports PHP 8.0+; the dev toolchain (PHPUnit 11 / Pest / Larastan) requires PHP 8.2+ |
+| PHP | `^8.0` with the `openssl` extension. Runtime supports PHP 8.0+ (no 8.1+ API is used anywhere in `src/`; CI checks syntax on 8.0 and runs the suite on 8.2–8.4); the dev toolchain (PHPUnit 11 / Pest / Larastan) requires PHP 8.2+ |
 | Databases | Docs and SQL helpers target **MySQL** and **PostgreSQL** (driver name is used to pick the dialect for `Encryption::db()`). |
+| Extensions (optional) | `ext-pdo` — only for the native-PHP dialect probe (`new EnvDbDriverDetector(null, $pdo)`); `ENCRYPTION_DB_DRIVER` or `db_driver` covers the same ground without PDO. |
 
 Packagist: **[erikwang2013/encryptable](https://packagist.org/packages/erikwang2013/encryptable)** (`name` in `composer.json`).
 
@@ -78,8 +163,43 @@ The table below summarizes **expected compatibility**, how to wire the package, 
 | **Webman** | 1.x / 2.x with **Illuminate** (database / support / validation) | Register `EncryptableServiceProvider` + **`config/plugin/erikwang2013/encryptable/app.php`** (Composer plugin or manual) | ✓ (when using Eloquent) | ✓ | ✓ | ✓ |
 | **Hyperf** | 2.x / 3.x | `extra.hyperf.config` merges `Bridge\Hyperf\ConfigProvider` + **`config/autoload/plugins/erikwang2013/encryptable.php`** (or legacy `config/autoload/encryptable.php`) | — (no Laravel cast; call `Encryption::php()` in entities/repos) | ✓ | ✓ (install `hyperf/db-connection`) | — (needs Illuminate validation stack) |
 | **ThinkPHP** | 6.x–8.x | `ThinkphpEncryptable::register($app)` + **`config/plugin/erikwang2013/encryptable/app.php`** (or legacy `config/encryptable.php`) | — (use accessors/mutators or types with `Encryption::php()`) | ✓ | ✓ | — |
+| **Native PHP** | ≥ 8.0, no framework | `Encryption::configure([...])`, or `ENCRYPTION_KEY` / `ENCRYPTION_CIPHER` / `ENCRYPTION_PREVIOUS_KEYS` / `ENCRYPTION_DB_DRIVER` | — (no Eloquent; call `Encryption::php()`) | ✓ | ✓ (`EnvDbDriverDetector`) | — (needs the Illuminate validation stack) |
 
 **Legend:** ✓ = supported for this stack out of the box; — = not provided; integrate in your own layer.
+
+### Native PHP (no framework, no container)
+
+The package has no runtime dependency on any framework: `require` is only `php`, `ext-openssl` and `psr/container`. Point it at a key and it works — either from the environment or from an array.
+
+```php
+use Erikwang2013\Encryptable\Encryption;
+
+// Option A — environment (12-factor style), nothing to configure in code:
+//   ENCRYPTION_KEY=<32 bytes for aes-256-*>
+//   ENCRYPTION_CIPHER=aes-256-gcm
+//   ENCRYPTION_PREVIOUS_KEYS='old-key-1,old-key-2'   # optional
+//   ENCRYPTION_DB_DRIVER=mysql|pgsql                 # optional, for Encryption::db()
+
+// Option B — one array, no env vars, no config file:
+Encryption::configure([
+    'key' => $_ENV['APP_KEY'],              // 32 bytes for aes-256-*, 16 bytes for aes-128-*
+    'cipher' => 'aes-256-gcm',              // default when omitted
+    'previous_keys' => ['2025-key'],        // optional decryption ring
+    'db_driver' => 'pgsql',                 // optional: MySQL/PostgreSQL SQL fragment dialect
+]);
+
+$ciphertext = Encryption::php()->encrypt($value);      // application path (AEAD + HMAC)
+$plain      = Encryption::php()->decrypt($ciphertext);
+$sql        = Encryption::db()->decrypt('phone');      // SQL fragment, dialect from db_driver/PDO/env
+```
+
+Notes for the native path:
+
+- `Encryption::configure()` only fills the **fallback** slot. Container bindings and `Encryption::setResolver()` still win, so calling it inside Laravel/Hyperf changes nothing.
+- `Encryption::db()` probes the dialect in this order: `db_driver` from `configure()` → `ENCRYPTION_DB_DRIVER` → a `PDO` connection you pass to `new EnvDbDriverDetector(null, $pdo)` → MySQL as the default.
+- Payload types follow the serialization envelope: `string`, `int`, `float`, `bool`, `null` (`$serialize = true`, the default). With `$serialize = false` pass a scalar or a `Stringable` — arrays and objects throw `SerializationException` instead of a raw `TypeError`.
+- `Encryption::isEncrypted()` recognises the **application-level** payload format only (`\x01`/`\x02` prefix); DB-format ciphertext is checked by the DB encrypter internally.
+- Failed decryption is not fatal by default: `decrypt()` returns the input unchanged unless you pass `$strict = true` (`rotateToCurrentKey()` is always strict).
 
 ---
 

@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 1010" role="img" aria-labelledby="archTitle archDesc"
+     font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif">
+  <title id="archTitle">Encryptable 架构设计 / architecture</title>
+  <desc id="archDesc">Layered architecture: application layer calls the Encryption facade, which resolves PHPEncrypter or DBEncrypter through framework bridges, contracts and config (container or environment variables), with the Composer plugin writing config at install time.</desc>
+
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4338CA"/>
+    </marker>
+    <style>
+      .t  { font-size: 15.5px; font-weight: 700; fill: #1E1B4B }
+      .s  { font-size: 11.5px; fill: #475569 }
+      .d  { font-size: 10.5px; fill: #64748B }
+      .ch { font-size: 11.5px; fill: #3730A3 }
+      .lt { font-size: 14px; font-weight: 700; fill: #3730A3; text-anchor: middle }
+      .le { font-size: 9.5px; fill: #6366F1; text-anchor: middle; letter-spacing: .5px }
+      .box { fill: #FFFFFF; stroke: #C7D2FE; stroke-width: 1.6 }
+      .tab { fill: #EEF2FF; stroke: #C7D2FE; stroke-width: 1.5 }
+      .chip { fill: #F5F3FF; stroke: #DDD6FE; stroke-width: 1.2 }
+      .arrow { stroke: #4338CA; stroke-width: 2; marker-end: url(#arw) }
+    </style>
+  </defs>
+
+  <rect width="1160" height="1010" rx="28" fill="#F7F9FF" stroke="#E0E7FF" stroke-width="1.5"/>
+
+  <text x="60" y="68" font-size="26" font-weight="700" fill="#312E81">Encryptable · 架构设计 / Architecture</text>
+  <text x="60" y="96" class="s" font-size="13">分层调用：应用层 → 门面 → 加密器 → 契约 → 桥接 → 运行时。安装期由 Composer 插件按框架栈写入配置。</text>
+
+  <!-- L1 application -->
+  <rect class="tab" x="44" y="124" width="104" height="112" rx="16"/>
+  <text x="96" y="170" class="lt">应用层</text>
+  <text x="96" y="188" class="le">Application</text>
+
+  <rect class="box" x="168" y="124" width="304" height="112" rx="16"/>
+  <text x="188" y="162" class="t">Eloquent 模型 / Model</text>
+  <text x="188" y="188" class="s">$casts 声明 Encryptable::class</text>
+  <text x="188" y="210" class="d">写入自动加密 · 读取自动解密</text>
+
+  <rect class="box" x="494" y="124" width="304" height="112" rx="16"/>
+  <text x="514" y="162" class="t">验证器 / Validator</text>
+  <text x="514" y="188" class="s">Rule::uniqueEncrypted()</text>
+  <text x="514" y="210" class="d">Rule::existsEncrypted()</text>
+
+  <rect class="box" x="820" y="124" width="304" height="112" rx="16"/>
+  <text x="840" y="162" class="t">手动调用 / Manual API</text>
+  <text x="840" y="188" class="s">Encryption::php()->encrypt()</text>
+  <text x="840" y="210" class="d">CLI · 队列 · 非模型代码路径</text>
+
+  <path class="arrow" d="M646 244 L646 262"/>
+
+  <!-- L2 facade -->
+  <rect class="tab" x="44" y="270" width="104" height="96" rx="16"/>
+  <text x="96" y="310" class="lt">门面</text>
+  <text x="96" y="328" class="le">Facade</text>
+
+  <rect class="box" x="168" y="270" width="956" height="96" rx="16"/>
+  <text x="188" y="302" class="t">Encryption · 静态门面（resolve 探测容器 / 环境变量）</text>
+  <g>
+    <rect class="chip" x="188" y="316" width="66" height="32" rx="10"/>
+    <text x="221" y="337" class="ch" text-anchor="middle">php()</text>
+    <rect class="chip" x="264" y="316" width="60" height="32" rx="10"/>
+    <text x="294" y="337" class="ch" text-anchor="middle">db()</text>
+    <rect class="chip" x="334" y="316" width="104" height="32" rx="10"/>
+    <text x="386" y="337" class="ch" text-anchor="middle">isEncrypted()</text>
+    <rect class="chip" x="448" y="316" width="160" height="32" rx="10"/>
+    <text x="528" y="337" class="ch" text-anchor="middle">rotateToCurrentKey()</text>
+    <rect class="chip" x="618" y="316" width="214" height="32" rx="10"/>
+    <text x="725" y="337" class="ch" text-anchor="middle">setResolver() · setContainer()</text>
+    <rect class="chip" x="842" y="316" width="86" height="32" rx="10"/>
+    <text x="885" y="337" class="ch" text-anchor="middle">mascot()</text>
+    <rect class="chip" x="938" y="316" width="96" height="32" rx="10"/>
+    <text x="986" y="337" class="ch" text-anchor="middle">configure()</text>
+  </g>
+
+  <path class="arrow" d="M646 374 L646 392"/>
+
+  <!-- L3 encrypters -->
+  <rect class="tab" x="44" y="400" width="104" height="124" rx="16"/>
+  <text x="96" y="452" class="lt">加密器</text>
+  <text x="96" y="470" class="le">Encrypters</text>
+
+  <rect class="box" x="168" y="400" width="467" height="124" rx="16"/>
+  <text x="188" y="440" class="t">PHPEncrypter · 应用层路径</text>
+  <text x="188" y="466" class="s">aes-256-gcm（AEAD）＋ HMAC-SHA256 双重完整性</text>
+  <text x="188" y="488" class="d">随机 IV · 「crypt:」脏位 · \x01/\x02 格式前缀 · 密钥环解密</text>
+  <text x="188" y="508" class="d">支持 rotateToCurrentKey() 渐进重加密</text>
+
+  <rect class="box" x="657" y="400" width="467" height="124" rx="16"/>
+  <text x="677" y="440" class="t">DBEncrypter · 数据库路径</text>
+  <text x="677" y="466" class="s">aes-256-ecb 确定性加密（相同明文 → 相同密文）</text>
+  <text x="677" y="488" class="d">HMAC32 前置 → base64，密文可等值比较 / 唯一索引</text>
+  <text x="677" y="508" class="d">生成 MySQL CONVERT(AES_DECRYPT…) / PostgreSQL 变体</text>
+
+  <path class="arrow" d="M646 532 L646 550"/>
+
+  <!-- L4 contracts -->
+  <rect class="tab" x="44" y="558" width="104" height="104" rx="16"/>
+  <text x="96" y="602" class="lt">契约</text>
+  <text x="96" y="620" class="le">Contracts</text>
+
+  <rect class="box" x="168" y="558" width="224" height="104" rx="16"/>
+  <text x="186" y="596" class="t" font-size="13">Config 契约</text>
+  <text x="186" y="626" class="d">key · cipher · previous_keys</text>
+
+  <rect class="box" x="412" y="558" width="224" height="104" rx="16"/>
+  <text x="430" y="596" class="t" font-size="13">DbDriverDetector</text>
+  <text x="430" y="626" class="d">判定 MySQL / PostgreSQL 方言</text>
+
+  <rect class="box" x="656" y="558" width="224" height="104" rx="16"/>
+  <text x="674" y="596" class="t" font-size="13">Serializer</text>
+  <text x="674" y="626" class="d">序列化信封与反序列化边界</text>
+
+  <rect class="box" x="900" y="558" width="224" height="104" rx="16"/>
+  <text x="918" y="596" class="t" font-size="13">PreviousKeysParser</text>
+  <text x="918" y="626" class="d">解析 previous_keys 解密环</text>
+
+  <path class="arrow" d="M646 670 L646 688"/>
+
+  <!-- L5 bridges -->
+  <rect class="tab" x="44" y="696" width="104" height="104" rx="16"/>
+  <text x="96" y="740" class="lt">桥接</text>
+  <text x="96" y="758" class="le">Bridges</text>
+
+  <rect class="box" x="168" y="696" width="224" height="104" rx="16"/>
+  <text x="186" y="732" class="t" font-size="13">Laravel 10–12</text>
+  <text x="186" y="752" class="t" font-size="13">Webman (Illuminate)</text>
+  <text x="186" y="776" class="d">ServiceProvider 注册</text>
+
+  <rect class="box" x="412" y="696" width="224" height="104" rx="16"/>
+  <text x="430" y="732" class="t" font-size="13">Hyperf 2–3</text>
+  <text x="430" y="762" class="d">ConfigProvider（extra.hyperf）</text>
+  <text x="430" y="782" class="d">encryptable.* 点号键</text>
+
+  <rect class="box" x="656" y="696" width="224" height="104" rx="16"/>
+  <text x="674" y="732" class="t" font-size="13">ThinkPHP 6–8</text>
+  <text x="674" y="762" class="d">ThinkphpEncryptable::register()</text>
+  <text x="674" y="782" class="d">注入 encryptable.*</text>
+
+  <rect class="box" x="900" y="696" width="224" height="104" rx="16"/>
+  <text x="918" y="732" class="t" font-size="13">原生 PHP / Plain PHP</text>
+  <text x="918" y="762" class="d">configure() · EnvEncryptableConfig</text>
+  <text x="918" y="782" class="d">EnvDbDriverDetector 探测方言</text>
+
+  <path class="arrow" d="M646 808 L646 826"/>
+
+  <!-- L6 runtime -->
+  <rect class="tab" x="44" y="834" width="104" height="86" rx="16"/>
+  <text x="96" y="872" class="lt">运行时</text>
+  <text x="96" y="890" class="le">Runtime</text>
+
+  <rect class="box" x="168" y="834" width="956" height="86" rx="16"/>
+  <text x="188" y="866" class="t" font-size="14">容器与配置来源</text>
+  <g>
+    <rect class="chip" x="188" y="878" width="120" height="30" rx="10"/>
+    <text x="248" y="898" class="ch" text-anchor="middle">PSR-11 容器</text>
+    <rect class="chip" x="318" y="878" width="132" height="30" rx="10"/>
+    <text x="384" y="898" class="ch" text-anchor="middle">ENCRYPTION_KEY</text>
+    <rect class="chip" x="460" y="878" width="146" height="30" rx="10"/>
+    <text x="533" y="898" class="ch" text-anchor="middle">ENCRYPTION_CIPHER</text>
+    <rect class="chip" x="616" y="878" width="216" height="30" rx="10"/>
+    <text x="724" y="898" class="ch" text-anchor="middle">ENCRYPTION_PREVIOUS_KEYS</text>
+    <rect class="chip" x="844" y="878" width="204" height="30" rx="10"/>
+    <text x="946" y="898" class="ch" text-anchor="middle">ENCRYPTION_DB_DRIVER</text>
+  </g>
+
+  <!-- install-time band -->
+  <rect x="168" y="936" width="956" height="52" rx="14" fill="#FFFFFF" stroke="#8B5CF6" stroke-width="1.6" stroke-dasharray="7 6"/>
+  <text x="188" y="958" class="d" font-size="11">安装期 / Install-time：Composer 插件读取 composer.json · composer.lock · 项目目录结构，</text>
+  <text x="188" y="976" class="d" font-size="11">识别框架栈后写入 config/plugin/{vendor}/{package}/app.php（Hyperf 为 config/autoload/plugins/…），已有文件不覆盖。</text>
+</svg>

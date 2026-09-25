@@ -8,8 +8,11 @@ declare(strict_types=1);
 
 namespace Erikwang2013\Encryptable;
 
+use Erikwang2013\Encryptable\Config\ArrayEncryptableConfig;
+use Erikwang2013\Encryptable\Config\EnvDbDriverDetector;
 use Erikwang2013\Encryptable\Config\EnvEncryptableConfig;
 use Erikwang2013\Encryptable\Contracts\EncryptableConfigContract;
+use Erikwang2013\Encryptable\Support\Mascot;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
 
@@ -45,6 +48,22 @@ class Encryption
     }
 
     /**
+     * 原生 PHP（无框架、无容器）的一步式配置入口：
+     *
+     *     Encryption::configure(['key' => '…32 字节…', 'cipher' => 'aes-256-gcm', 'db_driver' => 'pgsql']);
+     *
+     * 支持 {@code key}、{@code cipher}、{@code previous_keys}、{@code db_driver}。
+     * 容器绑定与 {@see self::setResolver()} 优先级更高：Laravel/Hyperf 等场景不会被这里覆盖。
+     * 等价于 {@code Encryption::setFallbackConfig(new ArrayEncryptableConfig($config))}。
+     *
+     * @param array{key?: mixed, cipher?: mixed, previous_keys?: mixed, db_driver?: mixed} $config
+     */
+    public static function configure(array $config): void
+    {
+        self::setFallbackConfig(new ArrayEncryptableConfig($config));
+    }
+
+    /**
      * @param null|callable(string): Encrypter $resolver Passing null restores default fallback resolution.
      */
     public static function setResolver(?callable $resolver): void
@@ -71,6 +90,15 @@ class Encryption
     {
         return self::php()->encrypter
             ->isEncrypted($value);
+    }
+
+    /**
+     * Locky · 小锁灵 — the project pet as SVG markup ({@see Mascot::ascii()} for CLI).
+     * Decorative only: it never touches keys, ciphers or payloads.
+     */
+    public static function mascot(): string
+    {
+        return Mascot::svg();
     }
 
     public function encrypt(mixed $value, bool $serialize = true): ?string
@@ -140,6 +168,14 @@ class Encryption
 
         if ($abstract === PHPEncrypter::class) {
             return new PHPEncrypter(self::fallbackEncryptableConfig());
+        }
+
+        if ($abstract === DBEncrypter::class) {
+            $config = self::fallbackEncryptableConfig();
+
+            return new DBEncrypter($config, new EnvDbDriverDetector(
+                $config instanceof ArrayEncryptableConfig ? $config->getDbDriver() : null
+            ));
         }
 
         throw new RuntimeException(

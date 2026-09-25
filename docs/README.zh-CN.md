@@ -4,7 +4,9 @@
 
 # Encryptable（erikwang2013/encryptable）
 
-在 **PHP 8.2+** 环境下，为敏感字段提供「可检索的匿名化 / 加密」能力：写入数据库前加密，经 Eloquent（或手动 API）读出时解密；同时可生成与 **MySQL / PostgreSQL** 兼容的 SQL 片段，便于在查询条件中对接已加密列。
+<img src="./pet.svg" alt="Locky · 小锁灵 — Encryptable 项目宠物" width="150" align="right" />
+
+在 **PHP 8.0+**（开发工具链需 8.2+）环境下，为敏感字段提供「可检索的匿名化 / 加密」能力：写入数据库前加密，经 Eloquent（或手动 API）读出时解密；同时可生成与 **MySQL / PostgreSQL** 兼容的 SQL 片段，便于在查询条件中对接已加密列。框架是可选项 —— 同样的两条加密路径可在**原生 PHP** 中通过 `Encryption::configure()` 或环境变量直接使用。
 
 本仓库在思路与行为上参考并演进自开源项目 **[laravel-encryptable](https://github.com/maize-tech/laravel-encryptable)**（Maize Tech）。若需对照原版设计、Issue 与发布说明，请优先查阅该上游仓库。
 
@@ -20,7 +22,7 @@
 
 - **双加密路径** — `Encryption::php()` 负责应用层加解密（OpenSSL，与 Eloquent Cast 同一路径）；`Encryption::db()` 生成在数据库引擎内解密的 SQL 片段。两条路径共享同一套密钥与算法配置。
 - **默认认证加密** — 默认算法 `aes-256-gcm` 通过 AEAD 提供机密性与完整性保护。若需要确定性加密（`UniqueEncrypted` / `ExistsEncrypted` 校验规则必需），可切换为 `aes-128-ecb`（相同明文→相同密文）或其他非 AEAD 算法。
-- **容器无关解析** — `Encryption::resolve()` 依次探测 Hyperf、Laravel 及用户注入的 PSR-11 容器；无容器时回退至 `ENCRYPTION_KEY` / `ENCRYPTION_CIPHER` 环境变量。已为 **Laravel 10–12**、**Webman**（Illuminate 生态）、**Hyperf 2–3**、**ThinkPHP 6–8** 提供框架桥接。
+- **容器无关解析** — `Encryption::resolve()` 依次探测 Hyperf、Laravel 及用户注入的 PSR-11 容器；无容器时依次回退到 `Encryption::configure([...])` 与 `ENCRYPTION_KEY` / `ENCRYPTION_CIPHER` 环境变量。已为 **Laravel 10–12**、**Webman**（Illuminate 生态）、**Hyperf 2–3**、**ThinkPHP 6–8** 提供框架桥接；**原生 PHP** 无需任何桥接。
 - **零停机密钥轮换** — 主密钥 + `previous_keys` 解密环使密钥替换无需大规模重加密；`rotateToCurrentKey()` 支持在线渐进密文迁移。
 
 ### 相较上游 `laravel-encryptable` 的扩展
@@ -31,7 +33,7 @@
 | **Composer 插件** | 安装/更新时自动检测项目框架栈并写入对应配置文件。 |
 | **密钥轮换** | `previous_keys` 解密环 + `PreviousKeysParser` 解析器 + `rotateToCurrentKey()`（上游仅支持单一密钥）。 |
 | **容器解析** | `Encryption::setResolver()` / `setContainer()` 回调，非 Laravel 栈无需改动核心代码即可接入。 |
-| **类型覆盖** | 所有 public/protected 方法均声明返回类型，基线 PHP 8.2+。 |
+| **类型覆盖** | 所有 public/protected 方法均声明返回类型，基线 PHP 8.0+（未使用任何 8.1+ API）。 |
 | **配置布局** | 统一 `config/plugin/{vendor}/{package}/app.php` 布局（Webman / Laravel / ThinkPHP 共用）；Hyperf 采用 autoload 点号键映射。 |
 
 ### 适用场景
@@ -43,17 +45,99 @@
 | 面向多框架交付，希望加密契约统一。 | 仅面向单一框架，优先使用其原生加密（如 Laravel 内置 `encrypted` cast）。 |
 | 需要零停机密钥轮换。 | 安全模型要求逐行随机 IV/Nonce 和 HMAC 完整性认证。 |
 
+### 项目宠物：Locky · 小锁灵
+
+<div align="center"><img src="./pet.svg" alt="Locky · 小锁灵" width="150" /></div>
+
+**Locky** 是本项目的宠物，形象直接取自设计本身而非贴图：锁环上的**金色钥匙**是当前主密钥，旁边的**两把灰色钥匙**是 `previous_keys` —— 仍挂在环上、仍能解开历史密文，直到你让它退役。这正是下文的密钥轮换模型，只是长得可爱了一点。
+
+宠物不只是文档插图，它也在代码里：
+
+| 调用 | 返回 |
+|------|------|
+| `Encryption::mascot()` / `Mascot::svg()` | `docs/pet.svg` 的原始标记（`docs/` 未随包分发时返回 `''`）。 |
+| `Mascot::dataUri()` | `data:image/svg+xml;base64,…`，可直接放进 `<img src>`。 |
+| `Mascot::ascii()` | 命令行用的等宽宠物（Composer 插件安装时打印的就是它）。 |
+| `Mascot::NAME` | `'Locky · 小锁灵'`。 |
+
+```php
+use Erikwang2013\Encryptable\Encryption;
+
+echo Encryption::mascot();   // 用于后台页面或错误页的 SVG 标记
+```
+
+纯装饰用途：宠物相关方法不接触密钥、算法与密文数据。
+
 ---
 
 ## 功能概览
+
+![功能设计：透明 Cast、双加密路径、可检索密文、密钥轮换、多框架 + 原生 PHP、安装即配置](./features.svg)
 
 - **Eloquent 自定义 Cast**：在模型 `$casts` 中使用 `Encryptable::class`，自动加解密指定属性。
 - **PHP 侧加解密**：`Encryption::php()->encrypt()` / `decrypt()`，适合命令行、队列、非模型场景。
 - **数据库表达式**：`Encryption::db()->decrypt()` 返回可在 SQL 中拼接的解密片段（MySQL / Postgres 语法分支），便于 `whereRaw` 等与密文列对照查询。
 - **校验规则**：`UniqueEncrypted`、`ExistsEncrypted` 及 `Rule::uniqueEncrypted()` / `Rule::existsEncrypted()` 宏（依赖 Laravel 的 `illuminate/validation`）。
-- **多运行时桥接**：在 **Laravel 10–12**、基于 Illuminate 的 **Webman**、**Hyperf 2–3**、**ThinkPHP 6–8** 下通过各自方式注册容器与配置；无完整容器时可用 **`ENCRYPTION_KEY`**、**`ENCRYPTION_CIPHER`**、可选 **`ENCRYPTION_PREVIOUS_KEYS`** 兜底 `Encryption::php()`（各栈能力与接入方式见下文 **「支持的框架」** 表格）。
+- **多运行时桥接**：在 **Laravel 10–12**、基于 Illuminate 的 **Webman**、**Hyperf 2–3**、**ThinkPHP 6–8** 下通过各自方式注册容器与配置；完全无框架时可用 `Encryption::configure(['key' => …])`，或用 **`ENCRYPTION_KEY`**、**`ENCRYPTION_CIPHER`**、可选 **`ENCRYPTION_PREVIOUS_KEYS`**、**`ENCRYPTION_DB_DRIVER`** 驱动 `Encryption::php()` 与 `Encryption::db()`（各栈能力与接入方式见下文 **「支持的框架」** 表格）。
 - **Composer 安装钩子**：本包为 **Composer 插件**（`composer-plugin`）。安装/更新时会读取 **`vendor/composer/installed.php`**、**`composer.lock`**、**`composer.json`**，并结合**目录结构**判断当前项目栈，再按各框架官方路径写入默认配置；未识别则跳过。**不会覆盖**已有配置文件。详见 **「安装 → Composer 插件」**。
 - **密钥优雅轮换（仅 `Encryption::php()` 路径）**：主密钥 + `previous_keys` / `ENCRYPTION_PREVIOUS_KEYS` 解密环，可选 **`rotateToCurrentKey()`** 渐进重加密；完整行为说明、上线步骤与配置入口见 **「配置说明 → 密钥优雅轮换」**。
+
+---
+
+## 架构设计
+
+![架构设计：应用层、门面、加密器、契约、桥接、运行时](./architecture.svg)
+
+所有入口 —— Eloquent Cast、验证规则、手动调用的 `Encryption::php()` —— 都经过同一个静态门面。门面按容器（或没有容器时的 `Encryption::configure()` / 环境变量）解析出 **`PHPEncrypter`**（应用层 AEAD）或 **`DBEncrypter`**（确定性密文与 SQL 解密片段）。桥接层只负责提供配置与容器绑定：加密核心不依赖任何框架，运行时依赖仅 `php`、`ext-openssl`、`psr/container`。
+
+### 生命周期
+
+![生命周期：值往返、加密列查询路径、密钥轮换](./lifecycle.svg)
+
+- **数据** —— 写入与读取严格对称：写入依次为 `序列化 → 脏位 → 随机 IV + AEAD → HMAC → base64`，读取则反向还原；只要密钥仍在解密环内，历史密文就仍可解开。
+- **查询** —— 只有确定性算法（`aes-*-ecb`）能让密文在数据库内参与比较；无论何种算法，模糊查询与范围查询都不适用于密文列。
+- **密钥轮换** —— 一把密钥会经历 `待用 → 主用 → 解密环 → 退役`；只要旧密钥还挂在环上，任意一步都可以安全回滚。
+
+---
+
+## 项目结构
+
+```text
+encryptable/
+├── src/
+│   ├── Encryption.php                  # 静态门面：php() · db() · isEncrypted() · rotateToCurrentKey() · mascot()
+│   ├── Encrypter.php                   # 抽象基类：密钥/算法校验、解密密钥环
+│   ├── PHPEncrypter.php                # 应用层路径：AEAD + HMAC、随机 IV、\x01/\x02 载荷格式
+│   ├── DBEncrypter.php                 # 数据库路径：确定性 AES-ECB + SQL 解密片段
+│   ├── Encryptable.php                 # Eloquent Cast（CastsAttributes）
+│   ├── EncryptableServiceProvider.php  # Laravel / Webman 服务提供者：发布配置、注册验证宏
+│   ├── Config/                         # ArrayEncryptableConfig · EnvEncryptableConfig · EnvDbDriverDetector（原生 PHP）
+│   ├── Contracts/                      # EncryptableConfigContract · DbDriverDetector
+│   ├── Exceptions/                     # Decrypt · Encrypt · MissingKey · MissingCipher · (Un)Serialization
+│   ├── Rules/                          # UniqueEncrypted · ExistsEncrypted
+│   ├── Support/                        # PackagePluginPaths · PreviousKeysParser · Mascot（宠物）
+│   ├── Utils/Serializer.php            # 两条加密路径共用的序列化信封
+│   ├── Bridge/
+│   │   ├── Laravel/                    # Illuminate 配置与数据库驱动探测
+│   │   ├── Webman/                     # Webman 原生插件配置读取
+│   │   ├── Hyperf/                     # ConfigProvider、配置、驱动探测
+│   │   └── ThinkPHP/                   # ThinkphpEncryptable::register()、配置、PSR-11 适配
+│   └── Composer/Plugin.php             # 安装/更新钩子：按识别到的框架栈写入配置
+├── config/
+│   ├── encryptable.php                 # 旧版扁平配置（仍会被合并）
+│   └── stubs/                          # plugin-app · webman-plugin-app · hyperf-plugin-autoload · hyperf-autoload-encryptable
+├── docs/
+│   ├── pet.svg                         # Locky · 小锁灵 —— 项目宠物
+│   ├── architecture.svg                # 架构设计图
+│   ├── features.svg                    # 功能设计图
+│   ├── lifecycle.svg                   # 数据 / 查询 / 密钥轮换生命周期
+│   └── README.zh-CN.md                 # 中文说明（本页）
+├── tests/                              # 19 个 PHPUnit 测试类（Cast、加密器、密钥环、桥接、原生 PHP、规则、配置）
+├── .github/workflows/                  # ci.yml（PHP 8.2–8.4 + PHP 8.0 语法检查）· release.yml
+├── composer.json                       # composer-plugin 入口与框架元数据
+├── phpstan.neon.dist · phpunit.xml
+└── README.md
+```
 
 ---
 
@@ -61,8 +145,9 @@
 
 | 项目 | 说明 |
 |------|------|
-| PHP | `^8.2`，需启用 `openssl` 扩展 |
+| PHP | `^8.0`，需启用 `openssl` 扩展。运行时支持 PHP 8.0+（`src/` 未使用任何 8.1+ API；CI 在 8.0 上做语法检查、在 8.2–8.4 上跑测试）；开发工具链（PHPUnit 11 / Pest / Larastan）需 PHP 8.2+ |
 | 数据库 | 文档与实现针对 **MySQL**、**PostgreSQL**（`Encryption::db()` 的方言检测依赖驱动名） |
+| 可选扩展 | `ext-pdo` —— 仅用于原生 PHP 的方言探测（`new EnvDbDriverDetector(null, $pdo)`）；用 `ENCRYPTION_DB_DRIVER` 或 `db_driver` 可完全替代 |
 
 Composer 包名：**[erikwang2013/encryptable](https://packagist.org/packages/erikwang2013/encryptable)**（`composer.json` 中 `name` 字段）。
 
@@ -78,8 +163,43 @@ Composer 包名：**[erikwang2013/encryptable](https://packagist.org/packages/er
 | **Webman** | 1.x / 2.x，且项目已引入 **Illuminate**（database / support / validation） | 注册 `EncryptableServiceProvider` + **`config/plugin/erikwang2013/encryptable/app.php`**（Composer 插件或手动） | ✓（使用 Eloquent 时） | ✓ | ✓ | ✓ |
 | **Hyperf** | 2.x / 3.x | `extra.hyperf.config` 合并 `Bridge\Hyperf\ConfigProvider` + **`config/autoload/plugins/erikwang2013/encryptable.php`**（或旧版 `config/autoload/encryptable.php`） | —（非 Laravel 模型 Cast；可在实体/仓储中调用 `Encryption::php()`） | ✓ | ✓（需安装 `hyperf/db-connection`） | —（依赖 Illuminate 校验栈） |
 | **ThinkPHP** | 6.x ~ 8.x | `ThinkphpEncryptable::register($app)` + **`config/plugin/erikwang2013/encryptable/app.php`**（或旧版 `config/encryptable.php`） | —（请用模型获取器/修改器或类型字段自行调用 `Encryption::php()`） | ✓ | ✓ | — |
+| **原生 PHP** | ≥ 8.0，无框架 | `Encryption::configure([...])`，或 `ENCRYPTION_KEY` / `ENCRYPTION_CIPHER` / `ENCRYPTION_PREVIOUS_KEYS` / `ENCRYPTION_DB_DRIVER` | —（无 Eloquent，直接调用 `Encryption::php()`） | ✓ | ✓（`EnvDbDriverDetector`） | —（依赖 Illuminate 校验栈） |
 
 **图例：** ✓ 表示该能力在本栈有官方桥接或可直接使用；**—** 表示本包未提供该栈的专用实现，需自行在业务层对接。
+
+### 原生 PHP（无框架、无容器）
+
+本包运行时不依赖任何框架：`require` 仅 `php`、`ext-openssl`、`psr/container`。给它一个密钥即可工作 —— 可以来自环境变量，也可以来自一个数组。
+
+```php
+use Erikwang2013\Encryptable\Encryption;
+
+// 方式 A —— 环境变量（12-factor 风格），代码里无需任何配置：
+//   ENCRYPTION_KEY=<aes-256-* 需 32 字节>
+//   ENCRYPTION_CIPHER=aes-256-gcm
+//   ENCRYPTION_PREVIOUS_KEYS='old-key-1,old-key-2'   # 可选
+//   ENCRYPTION_DB_DRIVER=mysql|pgsql                 # 可选，供 Encryption::db() 使用
+
+// 方式 B —— 一个数组搞定，不用环境变量、不用配置文件：
+Encryption::configure([
+    'key' => $_ENV['APP_KEY'],              // aes-256-* 需 32 字节，aes-128-* 需 16 字节
+    'cipher' => 'aes-256-gcm',              // 省略时即为此默认值
+    'previous_keys' => ['2025-key'],        // 可选：解密密钥环
+    'db_driver' => 'pgsql',                 // 可选：MySQL / PostgreSQL SQL 片段方言
+]);
+
+$ciphertext = Encryption::php()->encrypt($value);      // 应用层路径（AEAD + HMAC）
+$plain      = Encryption::php()->decrypt($ciphertext);
+$sql        = Encryption::db()->decrypt('phone');      // SQL 片段，方言取自 db_driver / PDO / 环境变量
+```
+
+原生场景要点：
+
+- `Encryption::configure()` 只填充**兜底**配置槽。容器绑定与 `Encryption::setResolver()` 优先级更高，因此在 Laravel / Hyperf 中调用它不会改变既有行为。
+- `Encryption::db()` 的方言探测顺序：`configure()` 的 `db_driver` → `ENCRYPTION_DB_DRIVER` → 传给 `new EnvDbDriverDetector(null, $pdo)` 的 `PDO` 连接 → 默认 MySQL。
+- 载荷类型遵循序列化信封：`string`、`int`、`float`、`bool`、`null`（默认 `$serialize = true`）。使用 `$serialize = false` 时请传标量或 `Stringable`；数组与对象会抛出 `SerializationException`，而不是裸 `TypeError`。
+- `Encryption::isEncrypted()` 只识别**应用层**载荷格式（`\x01`/`\x02` 前缀）；数据库格式的密文由 DBEncrypter 内部判断。
+- 解密失败默认不抛异常：`decrypt()` 会原样返回输入，除非传入 `$strict = true`（`rotateToCurrentKey()` 始终严格）。
 
 ---
 
