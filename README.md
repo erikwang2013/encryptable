@@ -4,7 +4,7 @@
 
 # Encryptable (`erikwang2013/encryptable`)
 
-<img src="./docs/pet.svg" alt="Locky · 小锁灵 — the Encryptable project pet" width="150" align="right" />
+![Locky · 小锁灵 — the Encryptable project pet](docs/pet.svg)
 
 On **PHP 8.0+** (dev toolchain: 8.2+), this package helps you **anonymize / encrypt sensitive attributes in a query-friendly way**: values are encrypted before persistence and decrypted when read through Eloquent (or manual APIs). It can also emit **MySQL / PostgreSQL**-compatible SQL fragments so you can compare or search against encrypted columns in raw queries. Frameworks are optional — the same two crypto paths run in **plain native PHP** via `Encryption::configure()` or environment variables.
 
@@ -47,7 +47,7 @@ Applications that handle personally identifiable information (PII), health recor
 
 ### Project pet: Locky · 小锁灵
 
-<div align="center"><img src="./docs/pet.svg" alt="Locky · 小锁灵" width="150" /></div>
+![Locky · 小锁灵](docs/pet.svg)
 
 **Locky** is the pet of this package, and it is drawn from the design rather than bolted onto it: the **amber key** on its ring is the current primary key, and the **two grey keys** are `previous_keys` — still on the ring, still able to decrypt old ciphertext, until you retire them. That is the key-rotation model below, as a mascot.
 
@@ -485,7 +485,7 @@ composer format      # Laravel Pint
 
 | 微信支付 | 支付宝 |
 |:---:|:---:|
-| <img src="./docs/weixinpay.png" alt="微信支付" width="130" height="130" /> | <img src="./docs/alipay.png" alt="支付宝" width="130" height="130" /> |
+| ![微信支付](docs/weixinpay.png) | ![支付宝](docs/alipay.png) |
 
 ---
 
@@ -496,10 +496,15 @@ MIT. See `LICENSE.md`.
 <!-- pet-expressions:start -->
 ## 项目宠物表情形态 · Locky
 
-<table align="center">
-<tr><td align="center"><img src="docs/pet-expressions/smile.svg" width="88" alt="笑"><br><b>笑</b><br><code>:emoji-smile:</code></td><td align="center"><img src="docs/pet-expressions/joy.svg" width="88" alt="欢乐"><br><b>欢乐</b><br><code>:emoji-joy:</code></td><td align="center"><img src="docs/pet-expressions/cry.svg" width="88" alt="哭"><br><b>哭</b><br><code>:emoji-cry:</code></td><td align="center"><img src="docs/pet-expressions/depressed.svg" width="88" alt="沮丧"><br><b>沮丧</b><br><code>:emoji-depressed:</code></td><td align="center"><img src="docs/pet-expressions/terrified.svg" width="88" alt="惊恐"><br><b>惊恐</b><br><code>:emoji-terrified:</code></td><td align="center"><img src="docs/pet-expressions/angry.svg" width="88" alt="愤怒"><br><b>愤怒</b><br><code>:emoji-angry:</code></td></tr>
-<tr><td align="center"><img src="docs/pet-expressions/coquettish.svg" width="88" alt="撒娇"><br><b>撒娇</b><br><code>:emoji-coquettish:</code></td><td align="center"><img src="docs/pet-expressions/cute.svg" width="88" alt="卖萌"><br><b>卖萌</b><br><code>:emoji-cute:</code></td><td align="center"><img src="docs/pet-expressions/pleasing.svg" width="88" alt="讨好"><br><b>讨好</b><br><code>:emoji-pleasing:</code></td><td align="center"><img src="docs/pet-expressions/knocking.svg" width="88" alt="敲打"><br><b>敲打</b><br><code>:emoji-knocking:</code></td><td align="center"><img src="docs/pet-expressions/facepalm.svg" width="88" alt="捂脸"><br><b>捂脸</b><br><code>:emoji-facepalm:</code></td><td align="center"><img src="docs/pet-expressions/tongue.svg" width="88" alt="吐舌头"><br><b>吐舌头</b><br><code>:emoji-tongue:</code></td></tr>
-</table>
+| 笑 | 欢乐 | 哭 | 沮丧 | 惊恐 | 愤怒 |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| ![笑](docs/pet-expressions/smile.svg) | ![欢乐](docs/pet-expressions/joy.svg) | ![哭](docs/pet-expressions/cry.svg) | ![沮丧](docs/pet-expressions/depressed.svg) | ![惊恐](docs/pet-expressions/terrified.svg) | ![愤怒](docs/pet-expressions/angry.svg) |
+| `:emoji-smile:` | `:emoji-joy:` | `:emoji-cry:` | `:emoji-depressed:` | `:emoji-terrified:` | `:emoji-angry:` |
+
+| 撒娇 | 卖萌 | 讨好 | 敲打 | 捂脸 | 吐舌头 |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| ![撒娇](docs/pet-expressions/coquettish.svg) | ![卖萌](docs/pet-expressions/cute.svg) | ![讨好](docs/pet-expressions/pleasing.svg) | ![敲打](docs/pet-expressions/knocking.svg) | ![捂脸](docs/pet-expressions/facepalm.svg) | ![吐舌头](docs/pet-expressions/tongue.svg) |
+| `:emoji-coquettish:` | `:emoji-cute:` | `:emoji-pleasing:` | `:emoji-knocking:` | `:emoji-facepalm:` | `:emoji-tongue:` |
 
 > 12 种彩色动态形态：笑 / 欢乐 / 哭 / 沮丧 / 惊恐 / 愤怒 / 撒娇 / 卖萌 / 讨好 / 敲打 / 捂脸 / 吐舌头。每个 SVG 自带表情、情绪特效与整体动效，并遵循 `prefers-reduced-motion`。
 <!-- pet-expressions:end -->

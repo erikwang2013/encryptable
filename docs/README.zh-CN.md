@@ -4,7 +4,7 @@
 
 # Encryptable（erikwang2013/encryptable）
 
-<img src="./pet.svg" alt="Locky · 小锁灵 — Encryptable 项目宠物" width="150" align="right" />
+![Locky · 小锁灵 — Encryptable 项目宠物](pet.svg)
 
 在 **PHP 8.0+**（开发工具链需 8.2+）环境下，为敏感字段提供「可检索的匿名化 / 加密」能力：写入数据库前加密，经 Eloquent（或手动 API）读出时解密；同时可生成与 **MySQL / PostgreSQL** 兼容的 SQL 片段，便于在查询条件中对接已加密列。框架是可选项 —— 同样的两条加密路径可在**原生 PHP** 中通过 `Encryption::configure()` 或环境变量直接使用。
 
@@ -47,7 +47,7 @@
 
 ### 项目宠物：Locky · 小锁灵
 
-<div align="center"><img src="./pet.svg" alt="Locky · 小锁灵" width="150" /></div>
+![Locky · 小锁灵](pet.svg)
 
 **Locky** 是本项目的宠物，形象直接取自设计本身而非贴图：锁环上的**金色钥匙**是当前主密钥，旁边的**两把灰色钥匙**是 `previous_keys` —— 仍挂在环上、仍能解开历史密文，直到你让它退役。这正是下文的密钥轮换模型，只是长得可爱了一点。
 
@@ -486,7 +486,7 @@ composer format      # Laravel Pint
 
 | 微信支付 | 支付宝 |
 |:---:|:---:|
-| <img src="./weixinpay.png" alt="微信支付" width="130" height="130" /> | <img src="./alipay.png" alt="支付宝" width="130" height="130" /> |
+| ![微信支付](weixinpay.png) | ![支付宝](alipay.png) |
 
 ---
 
