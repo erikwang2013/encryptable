@@ -101,6 +101,15 @@ class Encryption
         return Mascot::svg();
     }
 
+    /**
+     * Normalized cipher in use (lowercase, whitelisted) — handy for
+     * deterministic-mode checks such as the validation rules.
+     */
+    public function cipher(): string
+    {
+        return $this->encrypter->cipher();
+    }
+
     public function encrypt(mixed $value, bool $serialize = true): ?string
     {
         return $this->encrypter

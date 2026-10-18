@@ -89,8 +89,8 @@ final class RulesTest extends TestCase
         $this->factory = new CapturingValidationFactory($this->translator);
         $this->factory->setPresenceVerifier($this->verifier);
 
-        // Note: 'config' is intentionally NOT bound — the constructor guard then
-        // falls back to EnvEncryptableConfig, keeping the env-based cipher in charge.
+        // Note: 'config' is intentionally NOT bound — the rule guard reads the
+        // cipher from the resolved encrypter (fallback config here).
         $this->app->instance('validator', $this->factory);
         $this->app->instance('translator', $this->translator);
     }
@@ -117,6 +117,7 @@ final class RulesTest extends TestCase
     {
         $_ENV['ENCRYPTION_CIPHER'] = 'aes-256-gcm';
         putenv('ENCRYPTION_CIPHER=aes-256-gcm');
+        Encryption::setFallbackConfig(new KeyRingTestConfig(str_repeat('k', 32), [], 'aes-256-gcm'));
 
         try {
             new UniqueEncrypted('users', 'email');

@@ -8,73 +8,17 @@ declare(strict_types=1);
 
 namespace Erikwang2013\Encryptable\Rules;
 
-use Illuminate\Contracts\Validation\Rule;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\ForwardsCalls;
 use Illuminate\Validation\Rules\Exists;
-use Erikwang2013\Encryptable\Config\EnvEncryptableConfig;
-use Erikwang2013\Encryptable\Encryption;
-use LogicException;
 
-class ExistsEncrypted implements Rule
+class ExistsEncrypted extends EncryptedRule
 {
-    use ForwardsCalls;
-
-    private Exists $rule;
-
-    public function __construct(string $table, string $column = 'NULL')
+    protected function makeRule(string $table, string $column): object
     {
-        $this->assertDeterministicCipher();
-
-        $this->rule = new Exists($table, $column);
+        return new Exists($table, $column);
     }
 
-    /**
-     * ExistsEncrypted 用密文做等值查询，只有确定性加密（ECB）才语义成立。
-     * GCM 每次加密结果不同，会导致校验永远失败。
-     */
-    private function assertDeterministicCipher(): void
+    protected function messageKey(): string
     {
-        $cipher = function_exists('config') && function_exists('app') && app()->bound('config')
-            ? (string) config('encryptable.cipher', 'aes-256-gcm')
-            : (string) (new EnvEncryptableConfig)->getCipher();
-
-        if (! in_array(strtolower($cipher), ['aes-128-ecb', 'aes-256-ecb'], true)) {
-            throw new LogicException(
-                'UniqueEncrypted/ExistsEncrypted requires a deterministic cipher (ECB). '
-                . "Current cipher is [{$cipher}]. "
-                . "Set config('encryptable.cipher') or ENCRYPTION_CIPHER to aes-256-ecb."
-            );
-        }
-    }
-
-    /**
-     * @param  array<int, mixed>  $arguments
-     * @return $this
-     */
-    public function __call(string $name, array $arguments)
-    {
-        $this->forwardCallTo($this->rule, $name, $arguments);
-
-        return $this;
-    }
-
-    public function passes($attribute, $value): bool
-    {
-        $attribute = Str::before($attribute, '.');
-
-        return ! Validator::make([
-            $attribute => Encryption::php()->encrypt($value),
-        ], [
-            $attribute => $this->rule,
-        ])->fails();
-    }
-
-    public function message(): string
-    {
-        $msg = __('validation.exists');
-
-        return is_string($msg) ? $msg : 'validation.exists';
+        return 'validation.exists';
     }
 }

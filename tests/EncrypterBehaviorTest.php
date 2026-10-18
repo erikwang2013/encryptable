@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Erikwang2013\Encryptable\Tests;
 
 use Erikwang2013\Encryptable\DBEncrypter;
+use Erikwang2013\Encryptable\Encryption;
 use Erikwang2013\Encryptable\Exceptions\DecryptException;
 use Erikwang2013\Encryptable\Exceptions\MissingEncryptionCipherException;
 use Erikwang2013\Encryptable\Exceptions\MissingEncryptionKeyException;
@@ -21,6 +22,17 @@ use PHPUnit\Framework\TestCase;
 final class EncrypterBehaviorTest extends TestCase
 {
     private ?string $savedCipherEnv = null;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Rules read the cipher from the resolved encrypter; clear cached state
+        // so setCipherEnv() is honoured regardless of test order.
+        Encryption::setFallbackConfig(null);
+        Encryption::setResolver(null);
+        Encryption::setContainer(null);
+    }
 
     protected function tearDown(): void
     {
