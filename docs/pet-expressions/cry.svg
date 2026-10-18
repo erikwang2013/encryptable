@@ -32,10 +32,6 @@
   .ex-motion, [class*="ex-anim-"] { animation: none !important; }
 }
 </style><g class="ex-motion ex-cry"><g class="ex-base"><defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#312E81"/>
-      <stop offset="1" stop-color="#5B21B6"/>
-    </linearGradient>
     <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#FFFFFF"/>
       <stop offset="1" stop-color="#DBE2FF"/>
@@ -45,16 +41,6 @@
       <stop offset="1" stop-color="#F59E0B"/>
     </linearGradient>
   </defs>
-
-  <rect width="320" height="360" rx="72" fill="url(#bg)"/>
-
-  <g opacity="0.55" fill="#C7D2FE">
-    <circle cx="52" cy="72" r="3.5"/>
-    <circle cx="272" cy="118" r="2.5"/>
-    <circle cx="248" cy="52" r="4"/>
-    <circle cx="70" cy="228" r="2.5"/>
-    <circle cx="286" cy="252" r="3"/>
-  </g>
 
   <g transform="translate(0,-10)">
     
@@ -108,5 +94,5 @@
     <path d="M153.5 220 h13 l4 15 h-21 z" fill="#1E1B4B"/>
   </g>
 
-  <text x="160" y="314" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif" font-size="19" font-weight="600" fill="#E0E7FF" letter-spacing="1.5">Locky · 小锁灵</text>
-  <text x="160" y="338" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif" font-size="12" fill="#A5B4FC" letter-spacing="1">Encryptable · project pet 项目宠物</text></g><g class="ex-face"><ellipse cx="160" cy="199" rx="42" ry="34" fill="#E8EDFF"/><path d="M 122.03,173.5 L 137.78,167.2" stroke="#1E1B4B" stroke-width="1.6" stroke-linecap="round"/><path d="M 197.97,173.5 L 182.22,167.2" stroke="#1E1B4B" stroke-width="1.6" stroke-linecap="round"/><path d="M 122.03,181.9 Q 132,195.55 141.97,181.9" fill="none" stroke="#1E1B4B" stroke-width="2.1" stroke-linecap="round"/><path d="M 178.03,181.9 Q 188,195.55 197.97,181.9" fill="none" stroke="#1E1B4B" stroke-width="2.1" stroke-linecap="round"/><path d="M 147.68,207.1 Q 150.76,196.52 153.84,199.54 Q 156.92,196.52 160,207.1 Q 163.08,217.68 166.16,214.66 Q 169.24,217.68 172.32,207.1" fill="none" stroke="#1E1B4B" stroke-width="1.7" stroke-linecap="round"/><ellipse cx="124.12" cy="198.18" rx="8.19" ry="4.41" fill="#FF8FB3" opacity="0.25"/><ellipse cx="195.88" cy="198.18" rx="8.19" ry="4.41" fill="#FF8FB3" opacity="0.25"/><g transform="translate(0 0)"><path class="ex-anim-tear" style="animation-delay:0.0s" d="M 132,186.89 C 136.33,193.82 136.33,200.17 132,200.17 C 127.67,200.17 127.67,193.82 132,186.89 Z" fill="#7CC4F8"/><circle cx="132" cy="193.53" r="1.27" fill="#FFFFFF" opacity=".8"/></g><g transform="translate(0 0)"><path class="ex-anim-tear" style="animation-delay:0.55s" d="M 188,186.89 C 192.33,193.82 192.33,200.17 188,200.17 C 183.67,200.17 183.67,193.82 188,186.89 Z" fill="#7CC4F8"/><circle cx="188" cy="193.53" r="1.27" fill="#FFFFFF" opacity=".8"/></g><g transform="translate(0 0)"><path class="ex-anim-tear" style="animation-delay:0.9s" d="M 130.95,194.24 C 133.71,198.65 133.71,202.69 130.95,202.69 C 128.19,202.69 128.19,198.65 130.95,194.24 Z" fill="#A8D8FB"/><circle cx="130.95" cy="198.46" r="0.81" fill="#FFFFFF" opacity=".8"/></g><g transform="translate(0 0)"><path class="ex-anim-tear" style="animation-delay:1.35s" d="M 189.05,194.24 C 191.81,198.65 191.81,202.69 189.05,202.69 C 186.29,202.69 186.29,198.65 189.05,194.24 Z" fill="#A8D8FB"/><circle cx="189.05" cy="198.46" r="0.81" fill="#FFFFFF" opacity=".8"/></g></g></g></svg>
+  <text x="160" y="314" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif" font-size="19" font-weight="600" fill="#1E1B4B" letter-spacing="1.5">Locky · 小锁灵</text>
+  <text x="160" y="338" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif" font-size="12" fill="#64748B" letter-spacing="1">Encryptable · project pet 项目宠物</text></g><g class="ex-face"><ellipse cx="160" cy="199" rx="42" ry="34" fill="#E8EDFF"/><path d="M 122.03,173.5 L 137.78,167.2" stroke="#1E1B4B" stroke-width="1.6" stroke-linecap="round"/><path d="M 197.97,173.5 L 182.22,167.2" stroke="#1E1B4B" stroke-width="1.6" stroke-linecap="round"/><path d="M 122.03,181.9 Q 132,195.55 141.97,181.9" fill="none" stroke="#1E1B4B" stroke-width="2.1" stroke-linecap="round"/><path d="M 178.03,181.9 Q 188,195.55 197.97,181.9" fill="none" stroke="#1E1B4B" stroke-width="2.1" stroke-linecap="round"/><path d="M 147.68,207.1 Q 150.76,196.52 153.84,199.54 Q 156.92,196.52 160,207.1 Q 163.08,217.68 166.16,214.66 Q 169.24,217.68 172.32,207.1" fill="none" stroke="#1E1B4B" stroke-width="1.7" stroke-linecap="round"/><ellipse cx="124.12" cy="198.18" rx="8.19" ry="4.41" fill="#FF8FB3" opacity="0.25"/><ellipse cx="195.88" cy="198.18" rx="8.19" ry="4.41" fill="#FF8FB3" opacity="0.25"/><g transform="translate(0 0)"><path class="ex-anim-tear" style="animation-delay:0.0s" d="M 132,186.89 C 136.33,193.82 136.33,200.17 132,200.17 C 127.67,200.17 127.67,193.82 132,186.89 Z" fill="#7CC4F8"/><circle cx="132" cy="193.53" r="1.27" fill="#FFFFFF" opacity=".8"/></g><g transform="translate(0 0)"><path class="ex-anim-tear" style="animation-delay:0.55s" d="M 188,186.89 C 192.33,193.82 192.33,200.17 188,200.17 C 183.67,200.17 183.67,193.82 188,186.89 Z" fill="#7CC4F8"/><circle cx="188" cy="193.53" r="1.27" fill="#FFFFFF" opacity=".8"/></g><g transform="translate(0 0)"><path class="ex-anim-tear" style="animation-delay:0.9s" d="M 130.95,194.24 C 133.71,198.65 133.71,202.69 130.95,202.69 C 128.19,202.69 128.19,198.65 130.95,194.24 Z" fill="#A8D8FB"/><circle cx="130.95" cy="198.46" r="0.81" fill="#FFFFFF" opacity=".8"/></g><g transform="translate(0 0)"><path class="ex-anim-tear" style="animation-delay:1.35s" d="M 189.05,194.24 C 191.81,198.65 191.81,202.69 189.05,202.69 C 186.29,202.69 186.29,198.65 189.05,194.24 Z" fill="#A8D8FB"/><circle cx="189.05" cy="198.46" r="0.81" fill="#FFFFFF" opacity=".8"/></g></g></g></svg>

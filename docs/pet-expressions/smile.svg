@@ -32,10 +32,6 @@
   .ex-motion, [class*="ex-anim-"] { animation: none !important; }
 }
 </style><g class="ex-motion ex-smile"><g class="ex-base"><defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#312E81"/>
-      <stop offset="1" stop-color="#5B21B6"/>
-    </linearGradient>
     <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#FFFFFF"/>
       <stop offset="1" stop-color="#DBE2FF"/>
@@ -45,16 +41,6 @@
       <stop offset="1" stop-color="#F59E0B"/>
     </linearGradient>
   </defs>
-
-  <rect width="320" height="360" rx="72" fill="url(#bg)"/>
-
-  <g opacity="0.55" fill="#C7D2FE">
-    <circle cx="52" cy="72" r="3.5"/>
-    <circle cx="272" cy="118" r="2.5"/>
-    <circle cx="248" cy="52" r="4"/>
-    <circle cx="70" cy="228" r="2.5"/>
-    <circle cx="286" cy="252" r="3"/>
-  </g>
 
   <g transform="translate(0,-10)">
     
@@ -108,5 +94,5 @@
     <path d="M153.5 220 h13 l4 15 h-21 z" fill="#1E1B4B"/>
   </g>
 
-  <text x="160" y="314" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif" font-size="19" font-weight="600" fill="#E0E7FF" letter-spacing="1.5">Locky · 小锁灵</text>
-  <text x="160" y="338" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif" font-size="12" fill="#A5B4FC" letter-spacing="1">Encryptable · project pet 项目宠物</text></g><g class="ex-face"><ellipse cx="160" cy="199" rx="42" ry="34" fill="#E8EDFF"/><path d="M 122.03,186.94 Q 132,171.93 141.97,186.94" fill="none" stroke="#1E1B4B" stroke-width="2.1" stroke-linecap="round"/><path d="M 178.03,186.94 Q 188,171.93 197.97,186.94" fill="none" stroke="#1E1B4B" stroke-width="2.1" stroke-linecap="round"/><path d="M 147.68,207.1 Q 160,218.44 172.32,207.1" fill="none" stroke="#1E1B4B" stroke-width="1.7" stroke-linecap="round"/><ellipse cx="124.12" cy="198.18" rx="8.19" ry="4.41" fill="#FF8FB3" opacity="0.5"/><ellipse cx="195.88" cy="198.18" rx="8.19" ry="4.41" fill="#FF8FB3" opacity="0.5"/><path class="ex-anim-spark" style="animation-delay:0.0s" d="M 108.35,149.07 L 109.97,153.23 L 114.13,154.84 L 109.97,156.46 L 108.35,160.62 L 106.74,156.46 L 102.58,154.84 L 106.74,153.23 Z" fill="#FFD166"/><path class="ex-anim-spark" style="animation-delay:0.5s" d="M 208.31,139.61 L 209.55,142.78 L 212.72,144.02 L 209.55,145.25 L 208.31,148.43 L 207.08,145.25 L 203.9,144.02 L 207.08,142.78 Z" fill="#FFD166"/></g></g></svg>
+  <text x="160" y="314" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif" font-size="19" font-weight="600" fill="#1E1B4B" letter-spacing="1.5">Locky · 小锁灵</text>
+  <text x="160" y="338" text-anchor="middle" font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif" font-size="12" fill="#64748B" letter-spacing="1">Encryptable · project pet 项目宠物</text></g><g class="ex-face"><ellipse cx="160" cy="199" rx="42" ry="34" fill="#E8EDFF"/><path d="M 122.03,186.94 Q 132,171.93 141.97,186.94" fill="none" stroke="#1E1B4B" stroke-width="2.1" stroke-linecap="round"/><path d="M 178.03,186.94 Q 188,171.93 197.97,186.94" fill="none" stroke="#1E1B4B" stroke-width="2.1" stroke-linecap="round"/><path d="M 147.68,207.1 Q 160,218.44 172.32,207.1" fill="none" stroke="#1E1B4B" stroke-width="1.7" stroke-linecap="round"/><ellipse cx="124.12" cy="198.18" rx="8.19" ry="4.41" fill="#FF8FB3" opacity="0.5"/><ellipse cx="195.88" cy="198.18" rx="8.19" ry="4.41" fill="#FF8FB3" opacity="0.5"/><path class="ex-anim-spark" style="animation-delay:0.0s" d="M 108.35,149.07 L 109.97,153.23 L 114.13,154.84 L 109.97,156.46 L 108.35,160.62 L 106.74,156.46 L 102.58,154.84 L 106.74,153.23 Z" fill="#FFD166"/><path class="ex-anim-spark" style="animation-delay:0.5s" d="M 208.31,139.61 L 209.55,142.78 L 212.72,144.02 L 209.55,145.25 L 208.31,148.43 L 207.08,145.25 L 203.9,144.02 L 207.08,142.78 Z" fill="#FFD166"/></g></g></svg>
