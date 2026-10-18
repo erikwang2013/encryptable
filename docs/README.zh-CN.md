@@ -107,7 +107,7 @@ echo Encryption::mascot();   // 用于后台页面或错误页的 SVG 标记
 ```text
 encryptable/
 ├── src/
-│   ├── Encryption.php                  # 静态门面：php() · db() · isEncrypted() · rotateToCurrentKey() · mascot()
+│   ├── Encryption.php                  # 静态门面：php() · db() · isEncrypted() · cipher() · rotateToCurrentKey() · mascot()
 │   ├── Encrypter.php                   # 抽象基类：密钥/算法校验、解密密钥环
 │   ├── PHPEncrypter.php                # 应用层路径：AEAD + HMAC、随机 IV、\x01/\x02 载荷格式
 │   ├── DBEncrypter.php                 # 数据库路径：确定性 AES-ECB + SQL 解密片段
@@ -116,7 +116,7 @@ encryptable/
 │   ├── Config/                         # ArrayEncryptableConfig · EnvEncryptableConfig · EnvDbDriverDetector（原生 PHP）
 │   ├── Contracts/                      # EncryptableConfigContract · DbDriverDetector
 │   ├── Exceptions/                     # Decrypt · Encrypt · MissingKey · MissingCipher · (Un)Serialization
-│   ├── Rules/                          # UniqueEncrypted · ExistsEncrypted
+│   ├── Rules/                          # EncryptedRule 基类 · UniqueEncrypted · ExistsEncrypted
 │   ├── Support/                        # PackagePluginPaths · PreviousKeysParser · Mascot（宠物）
 │   ├── Utils/Serializer.php            # 两条加密路径共用的序列化信封
 │   ├── Bridge/
@@ -130,6 +130,8 @@ encryptable/
 │   └── stubs/                          # plugin-app · webman-plugin-app · hyperf-plugin-autoload · hyperf-autoload-encryptable
 ├── docs/
 │   ├── pet.svg                         # Locky · 小锁灵 —— 项目宠物
+│   ├── pet-expressions/                # 12 个动态表情形态
+│   ├── social-preview.svg / .png       # GitHub Social Preview（源文件 + 1280×640 渲染图）
 │   ├── architecture.svg                # 架构设计图
 │   ├── features.svg                    # 功能设计图
 │   ├── lifecycle.svg                   # 数据 / 查询 / 密钥轮换生命周期
@@ -307,9 +309,9 @@ php artisan vendor:publish --provider="Erikwang2013\Encryptable\EncryptableServi
 
 | 键 | 说明 |
 |----|------|
-| `key` | 当前主密钥，对应 `ENCRYPTION_KEY`；**新密文**始终用该密钥加密。 |
+| `key` | 当前主密钥，对应 `ENCRYPTION_KEY`；支持原始字节或 Laravel 风格的 `base64:…`（自动解码）。**新密文**始终用该密钥加密。 |
 | `cipher` | 算法标识，默认 `aes-256-gcm`，对应 `ENCRYPTION_CIPHER`；需与数据库侧及既有数据约定一致。**密钥环内所有密钥须使用同一 `cipher`。** |
-| `previous_keys` | 已下线但仍用于**解密**尝试的密钥列表，在 `key` 解密失败后再依次尝试。来自 `ENCRYPTION_PREVIOUS_KEYS`（逗号分隔或 JSON 数组）或配置项 `previous_keys`。 |
+| `previous_keys` | 已下线但仍用于**解密**尝试的密钥列表，在 `key` 解密失败后再依次尝试；同样支持原始字节或 `base64:…`。来自 `ENCRYPTION_PREVIOUS_KEYS`（逗号分隔或 JSON 数组）或配置项 `previous_keys`。 |
 
 无 Laravel / 未绑定容器时，`Encryption::php()` 可回退读取 **`ENCRYPTION_KEY`**、**`ENCRYPTION_CIPHER`**、**`ENCRYPTION_PREVIOUS_KEYS`**（见 `EnvEncryptableConfig`）。
 
@@ -325,7 +327,7 @@ php artisan vendor:publish --provider="Erikwang2013\Encryptable\EncryptableServi
 | **解析** | `Erikwang2013\Encryptable\Support\PreviousKeysParser` 将环境变量或配置统一为 `list<string>`：支持逗号分隔、`["k1","k2"]` 形式的 JSON 字符串、或 PHP 数组。 |
 | **密钥环** | 基类 `Encrypter::getDecryptionKeyRing()` 生成 `[主密钥, …previous_keys]`，去空、去与主密钥重复项。**环内所有密钥须与主密钥使用同一 `cipher`。** |
 | **加密** | `PHPEncrypter::encrypt()` **仅使用主密钥**（`getKey()`），不会用 `previous_keys` 加密。 |
-| **解密与 `isEncrypted()`** | 对每个候选密钥尝试 OpenSSL 解密；仅当解密结果以包内约定的脏前缀（`crypt:`）开头时才视为成功，避免把错误密钥产生的乱码当成明文。Eloquent `Encryptable` 等经 `Encryption::php()` 的路径与此一致。 |
+| **解密与 `isEncrypted()`** | 解密按密钥环顺序逐个尝试，仅当结果以包内约定的脏前缀（`crypt:`）开头时才视为成功，避免把错误密钥产生的乱码当成明文。`isEncrypted()` 本身只做轻量格式检查（严格 base64 + `\x01`/`\x02` 标记 + 最小长度），不执行任何 OpenSSL 运算。 |
 | **重加密 API** | `PHPEncrypter::rotateToCurrentKey(?string $payload, bool $serialize = true)`：先用密钥环解密，再用**当前主密钥**加密。`Encryption::php()->rotateToCurrentKey(...)` 为其代理。非密文原样返回，`null` 仍为 `null`。 |
 | **不适用场景** | **`Encryption::db()` / `DBEncrypter`**：生成 SQL 时**只嵌入主密钥**，**不读取** `previous_keys`。数据库函数侧密文轮换需在应用层或迁移脚本中解密再写回，不能依赖本节的密钥环。 |
 
@@ -424,11 +426,14 @@ $restored = Encryption::php()->decrypt($cipher);
 ```php
 use Erikwang2013\Encryptable\Encryption;
 
+// 确定性密文，用于等值查询（相同明文 → 相同密文）
+$stored = Encryption::db()->encrypt('value to compare', false);
+
 // 返回可在 SELECT / WHERE 中使用的片段（具体语法随 MySQL / Postgres 变化）
-$expr = Encryption::db()->decrypt($encryptedPayloadFromDb);
+$expr = Encryption::db()->decrypt('column_name');
 ```
 
-> `DBEncrypter::encrypt()` 会抛出「不支持」异常；本类主要面向「在 SQL 中解密比对」的场景。
+> `Encryption::db()->encrypt()` 存储 `base64(HMAC + AES-ECB 密文)`，让加密列保持可检索；`decrypt()` 返回的 SQL 片段会去掉 HMAC 前缀再解密列值。两者都只使用主密钥。
 
 ### 4. 自定义验证规则
 

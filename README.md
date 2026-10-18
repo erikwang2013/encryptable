@@ -33,7 +33,7 @@ Applications that handle personally identifiable information (PII), health recor
 | **Composer plugin** | Auto-publishes config files for the detected framework stack on install/update. |
 | **Key rotation** | `previous_keys` ring + `PreviousKeysParser` + `rotateToCurrentKey()` (upstream only handles a single key). |
 | **Container resolution** | `Encryption::setResolver()` / `setContainer()` callbacks so non-Laravel stacks can plug in without touching the core. |
-| **Type coverage** | Return types on all public/protected methods; PHP 8.2+ baseline. |
+| **Type coverage** | Return types on all public/protected methods; PHP 8.0+ baseline (no 8.1+ API). |
 | **Config layout** | Unified `config/plugin/{vendor}/{package}/app.php` layout shared across Webman, Laravel, ThinkPHP; Hyperf autoload path for its dotted-key convention. |
 
 ### When to use (and when not to)
@@ -107,7 +107,7 @@ Every entry point — the Eloquent cast, a validation rule, or a manual `Encrypt
 ```text
 encryptable/
 ├── src/
-│   ├── Encryption.php                  # static facade: php() · db() · isEncrypted() · rotateToCurrentKey() · mascot()
+│   ├── Encryption.php                  # static facade: php() · db() · isEncrypted() · cipher() · rotateToCurrentKey() · mascot()
 │   ├── Encrypter.php                   # abstract base: key/cipher validation, decryption key ring
 │   ├── PHPEncrypter.php                # application path: AEAD + HMAC, random IV, \x01/\x02 payload formats
 │   ├── DBEncrypter.php                 # DB path: deterministic AES-ECB + SQL decrypt fragments
@@ -116,7 +116,7 @@ encryptable/
 │   ├── Config/                         # ArrayEncryptableConfig · EnvEncryptableConfig · EnvDbDriverDetector (native PHP)
 │   ├── Contracts/                      # EncryptableConfigContract · DbDriverDetector
 │   ├── Exceptions/                     # Decrypt · Encrypt · MissingKey · MissingCipher · (Un)Serialization
-│   ├── Rules/                          # UniqueEncrypted · ExistsEncrypted
+│   ├── Rules/                          # EncryptedRule base · UniqueEncrypted · ExistsEncrypted
 │   ├── Support/                        # PackagePluginPaths · PreviousKeysParser · Mascot (the pet)
 │   ├── Utils/Serializer.php            # serialization envelope shared by both encrypters
 │   ├── Bridge/
@@ -130,6 +130,8 @@ encryptable/
 │   └── stubs/                          # plugin-app · webman-plugin-app · hyperf-plugin-autoload · hyperf-autoload-encryptable
 ├── docs/
 │   ├── pet.svg                         # Locky · 小锁灵 — the project pet
+│   ├── pet-expressions/                # 12 animated expression forms
+│   ├── social-preview.svg / .png       # GitHub social preview (source + 1280×640 render)
 │   ├── architecture.svg                # architecture diagram
 │   ├── features.svg                    # feature design
 │   ├── lifecycle.svg                   # value / query / key-rotation lifecycles
@@ -307,9 +309,9 @@ After copying or publishing **`config/plugin/erikwang2013/encryptable/app.php`**
 
 | Key | Description |
 |-----|-------------|
-| `key` | Primary secret key, from `ENCRYPTION_KEY`. New ciphertext is always produced with this key. |
+| `key` | Primary secret key, from `ENCRYPTION_KEY`. Raw bytes or a Laravel-style `base64:…` value (decoded automatically). New ciphertext is always produced with this key. |
 | `cipher` | Cipher id, default `aes-256-gcm`, from `ENCRYPTION_CIPHER`; keep aligned with DB defaults and any existing data contract. **All keys in the ring must use this cipher.** |
-| `previous_keys` | Retired keys still tried for **decrypt** after the primary fails (same cipher). From `ENCRYPTION_PREVIOUS_KEYS` (comma-separated or JSON array) or the `previous_keys` config entry. |
+| `previous_keys` | Retired keys still tried for **decrypt** after the primary fails (same cipher, same raw/`base64:…` forms). From `ENCRYPTION_PREVIOUS_KEYS` (comma-separated or JSON array) or the `previous_keys` config entry. |
 
 Without Laravel / bindings, `Encryption::php()` can still read **`ENCRYPTION_KEY`**, **`ENCRYPTION_CIPHER`**, and **`ENCRYPTION_PREVIOUS_KEYS`** via `EnvEncryptableConfig`.
 
@@ -325,7 +327,7 @@ You can **change the primary encryption key without taking the app offline for a
 | **Parsing** | `Erikwang2013\Encryptable\Support\PreviousKeysParser` turns `ENCRYPTION_PREVIOUS_KEYS` or config into a `list<string>`: comma-separated values, or a JSON array string (e.g. `["k1","k2"]`), or an already-loaded PHP array. |
 | **Key ring** | `Encrypter::getDecryptionKeyRing()` builds `[primary, …previous]` with empty strings and duplicate keys removed. **All keys in the ring must share the same `cipher`.** |
 | **Encrypt** | `PHPEncrypter::encrypt()` always uses the **primary** key only (`getKey()`). |
-| **Decrypt & `isEncrypted()`** | For each ring key, OpenSSL decrypt is tried; success requires decrypted payload to start with the internal dirty prefix (`crypt:`), so random garbage from a wrong key is not treated as valid. Same logic powers Eloquent `Encryptable` casts via `Encryption::php()`. |
+| **Decrypt & `isEncrypted()`** | Decrypt tries each ring key in order and accepts a plaintext only when it starts with the internal dirty prefix (`crypt:`), so random garbage from a wrong key is not treated as valid. `isEncrypted()` itself is a cheap format check (strict base64 + `\x01`/`\x02` marker + minimum length) and runs no OpenSSL work. |
 | **Re-encrypt API** | `PHPEncrypter::rotateToCurrentKey(?string $payload, bool $serialize = true)` decrypts with the ring then re-encrypts with the **current** primary. **`Encryption::php()->rotateToCurrentKey(...)`** delegates to it. Non-encrypted payloads are returned unchanged; `null` stays `null`. |
 | **Out of scope** | **`Encryption::db()` / `DBEncrypter`** — SQL snippets use the **primary** key only. `previous_keys` is **ignored** there. Rotate DB-native encrypted columns with an app-side or migration pipeline (read → decrypt in PHP if needed → write), not via this ring. |
 
@@ -424,11 +426,14 @@ $restored = Encryption::php()->decrypt($cipher);
 ```php
 use Erikwang2013\Encryptable\Encryption;
 
+// Deterministic ciphertext for equality lookups (same plaintext → same ciphertext)
+$stored = Encryption::db()->encrypt('value to compare', false);
+
 // Fragment usable in SELECT / WHERE (syntax differs for MySQL vs Postgres)
-$expr = Encryption::db()->decrypt($encryptedPayloadFromDb);
+$expr = Encryption::db()->decrypt('column_name');
 ```
 
-> `DBEncrypter::encrypt()` throws “not supported”; this path targets **SQL-side decrypt/compare** scenarios.
+> `Encryption::db()->encrypt()` stores `base64(HMAC + AES-ECB ciphertext)` so encrypted columns stay queryable; `decrypt()` returns the SQL fragment that strips the HMAC and decrypts a stored column. Both use the primary key only.
 
 ### 4. Custom validation rules
 
