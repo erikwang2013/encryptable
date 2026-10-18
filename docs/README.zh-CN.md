@@ -56,6 +56,8 @@
 | 调用 | 返回 |
 |------|------|
 | `Encryption::mascot()` / `Mascot::svg()` | `docs/pet.svg` 的原始标记（`docs/` 未随包分发时返回 `''`）。 |
+| `Mascot::expressions()` | `docs/pet-expressions/` 中 12 个动态表情形态的名称。 |
+| `Mascot::expression($name)` | 指定形态的 SVG 标记（名称未知时返回 `''`）。 |
 | `Mascot::dataUri()` | `data:image/svg+xml;base64,…`，可直接放进 `<img src>`。 |
 | `Mascot::ascii()` | 命令行用的等宽宠物（Composer 插件安装时打印的就是它）。 |
 | `Mascot::NAME` | `'Locky · 小锁灵'`。 |

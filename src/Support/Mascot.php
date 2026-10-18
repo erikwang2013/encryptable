@@ -21,11 +21,32 @@ final class Mascot
     /** Display name of the pet / 项目宠物名称 */
     public const NAME = 'Locky · 小锁灵';
 
+    /** The 12 animated expression forms shipped as {@code docs/pet-expressions/*.svg}. */
+    private const EXPRESSIONS = [
+        'angry',
+        'coquettish',
+        'cry',
+        'cute',
+        'depressed',
+        'facepalm',
+        'joy',
+        'knocking',
+        'pleasing',
+        'smile',
+        'terrified',
+        'tongue',
+    ];
+
     private const SVG_PATH = __DIR__.'/../../docs/pet.svg';
+
+    private const EXPRESSIONS_PATH = __DIR__.'/../../docs/pet-expressions';
 
     private const DATA_URI_PREFIX = 'data:image/svg+xml;base64,';
 
     private static ?string $svgCache = null;
+
+    /** @var array<string, string> */
+    private static array $expressionCache = [];
 
     /**
      * Raw SVG markup of the pet, or an empty string when {@code docs/pet.svg} is not shipped.
@@ -34,6 +55,32 @@ final class Mascot
     public static function svg(): string
     {
         return self::$svgCache ??= (is_file(self::SVG_PATH) ? (string) file_get_contents(self::SVG_PATH) : '');
+    }
+
+    /**
+     * Names of the 12 animated expression forms.
+     *
+     * @return list<string>
+     */
+    public static function expressions(): array
+    {
+        return self::EXPRESSIONS;
+    }
+
+    /**
+     * SVG markup of one expression form, or an empty string for an unknown name
+     * (or when {@code docs/pet-expressions/} is not shipped).
+     * Each file is read once per process.
+     */
+    public static function expression(string $name): string
+    {
+        if (! in_array($name, self::EXPRESSIONS, true)) {
+            return '';
+        }
+
+        return self::$expressionCache[$name] ??= is_file($path = self::EXPRESSIONS_PATH."/{$name}.svg")
+            ? (string) file_get_contents($path)
+            : '';
     }
 
     /**

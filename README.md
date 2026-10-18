@@ -56,6 +56,8 @@ It ships as part of the code, not only as documentation:
 | Call | Returns |
 |------|---------|
 | `Encryption::mascot()` / `Mascot::svg()` | The raw `docs/pet.svg` markup (`''` if `docs/` is not shipped). |
+| `Mascot::expressions()` | Names of the 12 animated expression forms in `docs/pet-expressions/`. |
+| `Mascot::expression($name)` | SVG markup for one expression form (`''` if the name is unknown). |
 | `Mascot::dataUri()` | `data:image/svg+xml;base64,…` — drop straight into `<img src>`. |
 | `Mascot::ascii()` | A monospace pet for CLI output (the Composer plugin prints it on install). |
 | `Mascot::NAME` | `'Locky · 小锁灵'`. |

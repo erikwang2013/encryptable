@@ -47,4 +47,25 @@ final class MascotTest extends TestCase
     {
         self::assertSame(Mascot::svg(), Encryption::mascot());
     }
+
+    public function test_every_expression_is_shipped_and_parses_as_xml(): void
+    {
+        self::assertCount(12, Mascot::expressions());
+
+        foreach (Mascot::expressions() as $name) {
+            $svg = Mascot::expression($name);
+
+            self::assertNotSame('', $svg, $name);
+            self::assertStringStartsWith('<svg', ltrim($svg), $name);
+
+            $doc = new DOMDocument;
+            self::assertTrue($doc->loadXML($svg), "Expression {$name} must be well-formed XML.");
+        }
+    }
+
+    public function test_unknown_expression_returns_empty_string(): void
+    {
+        self::assertSame('', Mascot::expression('nope'));
+        self::assertSame('', Mascot::expression('../pet'));
+    }
 }
