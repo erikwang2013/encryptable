@@ -36,5 +36,5 @@ jobs:
         run: |
           gh release create "${{ steps.version.outputs.next }}" \
             --title "Release ${{ steps.version.outputs.next }}" \
-            --notes "Incremental release from latest (${{ steps.version.outputs.latest }})." \
+            --generate-notes \
             --target main
