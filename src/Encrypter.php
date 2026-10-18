@@ -63,12 +63,7 @@ abstract class Encrypter
                 throw new MissingEncryptionKeyException;
             }
 
-            if (str_starts_with($key, 'base64:')) {
-                $key = base64_decode(substr($key, 7), true);
-                if ($key === false) {
-                    throw new MissingEncryptionKeyException('The encryption key is not valid base64.');
-                }
-            }
+            $key = $this->normalizeKey($key);
 
             $expectedLength = str_contains($cipher, '256') ? 32 : 16;
             if (strlen($key) !== $expectedLength) {
@@ -81,6 +76,24 @@ abstract class Encrypter
         }
 
         return $this->cachedKey;
+    }
+
+    /**
+     * Accepts raw key bytes or the Laravel-style {@code base64:…} envelope,
+     * so primary and previous keys can be written in the same format.
+     */
+    private function normalizeKey(string $key): string
+    {
+        if (! str_starts_with($key, 'base64:')) {
+            return $key;
+        }
+
+        $decoded = base64_decode(substr($key, 7), true);
+        if ($decoded === false) {
+            throw new MissingEncryptionKeyException('The encryption key is not valid base64.');
+        }
+
+        return $decoded;
     }
 
     protected function getEncryptionCipher(): string
@@ -145,6 +158,10 @@ abstract class Encrypter
 
             foreach ($this->encryptableConfig->getPreviousKeys() as $key) {
                 $key = trim((string) $key);
+                if ($key === '') {
+                    continue;
+                }
+                $key = $this->normalizeKey($key);
                 if ($key === '' || $key === $primary) {
                     continue;
                 }

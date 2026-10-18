@@ -41,6 +41,21 @@ final class KeyRotationTest extends TestCase
         self::assertSame('hello', (new PHPEncrypter($newCfg))->decrypt($payload, true));
     }
 
+    public function test_previous_keys_accept_base64_prefix(): void
+    {
+        $old = random_bytes(16);
+        $new = random_bytes(16);
+
+        $payload = (new PHPEncrypter(new KeyRingTestConfig($old, [])))->encrypt('hello', true);
+
+        $newCfg = new KeyRingTestConfig(
+            'base64:'.base64_encode($new),
+            ['base64:'.base64_encode($old)]
+        );
+
+        self::assertSame('hello', (new PHPEncrypter($newCfg))->decrypt($payload, true));
+    }
+
     public function test_rotate_to_current_key_re_encrypts_with_primary(): void
     {
         $old = str_repeat('a', 16);

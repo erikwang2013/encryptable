@@ -10,7 +10,7 @@ return [
     | Encryption key
     |--------------------------------------------------------------------------
     |
-    | The key used to encrypt data.
+    | The key used to encrypt data. Raw bytes or a base64:... envelope.
     | Once defined, never change it or encrypted data cannot be correctly decrypted.
     |
     */
@@ -42,8 +42,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | Retired keys still accepted for decrypting existing ciphertext. Use the
-    | same cipher as the primary key. Env ENCRYPTION_PREVIOUS_KEYS: comma list
-    | or JSON array, e.g. "old16bytekeyaaa,older16bytekey" or ["k1","k2"].
+    | same cipher as the primary key and the same raw/base64:... format.
+    | Env ENCRYPTION_PREVIOUS_KEYS: comma list or JSON array,
+    | e.g. "old16bytekeyaaa,older16bytekey" or ["k1","k2"].
     |
     */
 
