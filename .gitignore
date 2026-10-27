@@ -8,3 +8,5 @@ composer.lock
 .swarm
 .mcp.json
 ruvector.db
+# Generated static site, deployed separately
+/site/

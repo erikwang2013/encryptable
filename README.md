@@ -4,6 +4,8 @@
 
 # Encryptable (`erikwang2013/encryptable`)
 
+> 官网 / Website: [https://package.erik.xyz/encryptable/](https://package.erik.xyz/encryptable/)
+
 ![Locky · 小锁灵 — the Encryptable project pet](docs/pet.svg)
 
 On **PHP 8.0+** (dev toolchain: 8.2+), this package helps you **anonymize / encrypt sensitive attributes in a query-friendly way**: values are encrypted before persistence and decrypted when read through Eloquent (or manual APIs). It can also emit **MySQL / PostgreSQL**-compatible SQL fragments so you can compare or search against encrypted columns in raw queries. Frameworks are optional — the same two crypto paths run in **plain native PHP** via `Encryption::configure()` or environment variables.

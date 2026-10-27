@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 880" role="img" aria-labelledby="featTitle featDesc"
+     font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif">
+  <title id="featTitle">Encryptable · Feature design</title>
+  <desc id="featDesc">Six capabilities: transparent Eloquent cast, dual crypto paths (PHP and DB), queryable deterministic ciphertext, zero-downtime key rotation, multi-framework plus framework-free (native PHP) support, and install-time config publishing, plus a per-framework capability matrix.</desc>
+
+  <defs>
+    <style>
+      .t   { font-size: 16px; font-weight: 700; fill: #1E1B4B }
+      .b   { font-size: 11.5px; fill: #475569 }
+      .n   { font-size: 10.5px; fill: #94A3B8 }
+      .hd  { font-size: 11px; font-weight: 700; fill: #3730A3 }
+      .cell{ font-size: 11.5px; fill: #475569 }
+      .card{ fill: #FFFFFF; stroke: #C7D2FE; stroke-width: 1.6 }
+      .badge{ fill: #EEF2FF; stroke: #C7D2FE; stroke-width: 1.4 }
+      .ic  { fill: none; stroke: #4338CA; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round }
+      .icg { fill: none; stroke: #F59E0B; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round }
+      .icf { fill: #4338CA }
+      .icgf{ fill: #F59E0B }
+    </style>
+  </defs>
+
+  <rect width="1160" height="880" rx="28" fill="#F7F9FF" stroke="#E0E7FF" stroke-width="1.5"/>
+  <text x="60" y="68" font-size="26" font-weight="700" fill="#312E81">Encryptable · Feature design</text>
+  <text x="60" y="96" font-size="13" fill="#64748B">Six capabilities: transparent cast, dual crypto paths, searchable ciphertext, key rotation, multi-framework + plain PHP, install-time config.</text>
+
+  <!-- ============ card 1 ============ -->
+  <rect class="card" x="60" y="130" width="336" height="232" rx="18"/>
+  <rect class="badge" x="86" y="156" width="48" height="48" rx="14"/>
+  <path class="ic" d="M103 184 v-6 a7 7 0 0 1 14 0 v6"/>
+  <rect x="97" y="183" width="26" height="18" rx="5" fill="#EEF2FF" stroke="#4338CA" stroke-width="2.6"/>
+  <circle class="icf" cx="110" cy="192" r="2.4"/>
+  <text class="t" x="150" y="190">Transparent cast</text>
+  <line x1="86" y1="218" x2="370" y2="218" stroke="#E2E8F0" stroke-width="1.4"/>
+  <circle class="icf" cx="92" cy="246" r="3"/><text class="b" x="106" y="250">$casts declares Encryptable::class</text>
+  <circle class="icf" cx="92" cy="274" r="3"/><text class="b" x="106" y="278">Encrypt before write, decrypt on read</text>
+  <circle class="icf" cx="92" cy="302" r="3"/><text class="b" x="106" y="306">Works with Eloquent and Webman</text>
+  <text class="n" x="106" y="334">No model accessor / mutator changes</text>
+
+  <!-- ============ card 2 ============ -->
+  <rect class="card" x="424" y="130" width="336" height="232" rx="18"/>
+  <rect class="badge" x="450" y="156" width="48" height="48" rx="14"/>
+  <path class="ic" d="M460 178 h18"/><path class="icf" d="M478 174 l9 4 l-9 4 z"/>
+  <path class="icg" d="M488 194 h-18"/><path class="icgf" d="M470 190 l-9 4 l9 4 z"/>
+  <text class="t" x="514" y="190">Dual crypto paths</text>
+  <line x1="450" y1="218" x2="734" y2="218" stroke="#E2E8F0" stroke-width="1.4"/>
+  <circle class="icf" cx="456" cy="246" r="3"/><text class="b" x="470" y="250">php() application-layer AEAD</text>
+  <circle class="icf" cx="456" cy="274" r="3"/><text class="b" x="470" y="278">db() generates SQL decrypt fragments</text>
+  <circle class="icf" cx="456" cy="302" r="3"/><text class="b" x="470" y="306">Same key, same algorithm config</text>
+  <text class="n" x="470" y="334">MySQL / PostgreSQL dialects auto-selected</text>
+
+  <!-- ============ card 3 ============ -->
+  <rect class="card" x="788" y="130" width="336" height="232" rx="18"/>
+  <rect class="badge" x="814" y="156" width="48" height="48" rx="14"/>
+  <circle class="ic" cx="836" cy="178" r="9"/>
+  <path class="ic" d="M843 185 l8 8"/>
+  <text class="t" x="878" y="190">Searchable ciphertext</text>
+  <line x1="814" y1="218" x2="1098" y2="218" stroke="#E2E8F0" stroke-width="1.4"/>
+  <circle class="icf" cx="820" cy="246" r="3"/><text class="b" x="834" y="250">Deterministic aes-256-ecb</text>
+  <circle class="icf" cx="820" cy="274" r="3"/><text class="b" x="834" y="278">Unique / exists validation works</text>
+  <circle class="icf" cx="820" cy="302" r="3"/><text class="b" x="834" y="306">Equality compare and unique index work</text>
+  <text class="n" x="834" y="334">No fuzzy / range queries (semantic limit)</text>
+
+  <!-- ============ card 4 ============ -->
+  <rect class="card" x="60" y="388" width="336" height="232" rx="18"/>
+  <rect class="badge" x="86" y="414" width="48" height="48" rx="14"/>
+  <circle class="icg" cx="104" cy="434" r="6.5"/>
+  <path class="icg" d="M108.5 438.5 l11 11"/>
+  <path class="icg" d="M119.5 449.5 l-4 4"/>
+  <text class="t" x="150" y="448">Graceful key rotation</text>
+  <line x1="86" y1="476" x2="370" y2="476" stroke="#E2E8F0" stroke-width="1.4"/>
+  <circle class="icf" cx="92" cy="504" r="3"/><text class="b" x="106" y="508">Primary key + previous_keys decrypt ring</text>
+  <circle class="icf" cx="92" cy="532" r="3"/><text class="b" x="106" y="536">rotateToCurrentKey() gradual re-encryption</text>
+  <circle class="icf" cx="92" cy="560" r="3"/><text class="b" x="106" y="564">Zero-downtime rotation, instant rollback</text>
+  <text class="n" x="106" y="592">Encryption::php() path only</text>
+
+  <!-- ============ card 5 ============ -->
+  <rect class="card" x="424" y="388" width="336" height="232" rx="18"/>
+  <rect class="badge" x="450" y="414" width="48" height="48" rx="14"/>
+  <circle class="ic" cx="474" cy="427" r="5"/>
+  <path class="ic" d="M471 431 l-8 9 M477 431 l8 9"/>
+  <circle cx="461" cy="448" r="5" fill="#EEF2FF" stroke="#4338CA" stroke-width="2.4"/>
+  <circle cx="487" cy="448" r="5" fill="#EEF2FF" stroke="#F59E0B" stroke-width="2.4"/>
+  <text class="t" x="514" y="448">Frameworks + plain PHP</text>
+  <line x1="450" y1="476" x2="734" y2="476" stroke="#E2E8F0" stroke-width="1.4"/>
+  <circle class="icf" cx="456" cy="504" r="3"/><text class="b" x="470" y="508">Laravel 10–12 · Webman</text>
+  <circle class="icf" cx="456" cy="532" r="3"/><text class="b" x="470" y="536">Hyperf 2–3 · ThinkPHP 6–8</text>
+  <circle class="icf" cx="456" cy="560" r="3"/><text class="b" x="470" y="564">Plain PHP: configure() / env vars</text>
+  <text class="n" x="470" y="592">Runtime deps: php + openssl + psr/container</text>
+
+  <!-- ============ card 6 ============ -->
+  <rect class="card" x="788" y="388" width="336" height="232" rx="18"/>
+  <rect class="badge" x="814" y="414" width="48" height="48" rx="14"/>
+  <path class="ic" d="M838 428 v10"/><path class="icf" d="M833 438 l5 7 l5 -7 z"/>
+  <rect x="825" y="447" width="26" height="16" rx="4" fill="#EEF2FF" stroke="#4338CA" stroke-width="2.4"/>
+  <text class="t" x="878" y="448">Config on install</text>
+  <line x1="814" y1="476" x2="1098" y2="476" stroke="#E2E8F0" stroke-width="1.4"/>
+  <circle class="icf" cx="820" cy="504" r="3"/><text class="b" x="834" y="508">Composer plugin detects deps and layout</text>
+  <circle class="icf" cx="820" cy="532" r="3"/><text class="b" x="834" y="536">Writes config at each framework's path</text>
+  <circle class="icf" cx="820" cy="560" r="3"/><text class="b" x="834" y="564">Never overwrites; skips unknown stacks</text>
+  <text class="n" x="834" y="592">Or vendor:publish / copy manually</text>
+
+  <!-- ============ capability matrix ============ -->
+  <rect class="card" x="60" y="650" width="1064" height="196" rx="18"/>
+  <text x="88" y="686" font-size="14" font-weight="700" fill="#1E1B4B">Capability matrix</text>
+  <text class="hd" x="90" y="722">Framework</text>
+  <text class="hd" x="340" y="722" text-anchor="middle">$casts Cast</text>
+  <text class="hd" x="510" y="722" text-anchor="middle">Rules</text>
+  <text class="hd" x="700" y="722" text-anchor="middle">php() AEAD</text>
+  <text class="hd" x="900" y="722" text-anchor="middle">db() SQL fragments</text>
+  <line x1="90" y1="732" x2="1094" y2="732" stroke="#E2E8F0" stroke-width="1.4"/>
+
+  <rect x="88" y="740" width="1008" height="24" rx="6" fill="#F8FAFF"/>
+  <text class="cell" x="90" y="757">Laravel 10–12 · Webman</text>
+  <text x="340" y="757" text-anchor="middle" font-size="12" font-weight="700" fill="#10B981">✓</text>
+  <text x="510" y="757" text-anchor="middle" font-size="12" font-weight="700" fill="#10B981">✓</text>
+  <text x="700" y="757" text-anchor="middle" font-size="12" font-weight="700" fill="#10B981">✓</text>
+  <text x="900" y="757" text-anchor="middle" font-size="12" font-weight="700" fill="#10B981">✓</text>
+
+  <text class="cell" x="90" y="785">Hyperf 2–3</text>
+  <text x="340" y="785" text-anchor="middle" font-size="12" fill="#94A3B8">—</text>
+  <text x="510" y="785" text-anchor="middle" font-size="12" fill="#94A3B8">—</text>
+  <text x="700" y="785" text-anchor="middle" font-size="12" font-weight="700" fill="#10B981">✓</text>
+  <text x="900" y="785" text-anchor="middle" font-size="12" font-weight="700" fill="#10B981">✓</text>
+
+  <rect x="88" y="792" width="1008" height="24" rx="6" fill="#F8FAFF"/>
+  <text class="cell" x="90" y="809">ThinkPHP 6–8</text>
+  <text x="340" y="809" text-anchor="middle" font-size="12" fill="#94A3B8">—</text>
+  <text x="510" y="809" text-anchor="middle" font-size="12" fill="#94A3B8">—</text>
+  <text x="700" y="809" text-anchor="middle" font-size="12" font-weight="700" fill="#10B981">✓</text>
+  <text x="900" y="809" text-anchor="middle" font-size="12" font-weight="700" fill="#10B981">✓</text>
+
+  <text class="cell" x="90" y="833">Plain PHP</text>
+  <text x="340" y="833" text-anchor="middle" font-size="12" fill="#94A3B8">—</text>
+  <text x="510" y="833" text-anchor="middle" font-size="12" fill="#94A3B8">—</text>
+  <text x="700" y="833" text-anchor="middle" font-size="12" font-weight="700" fill="#10B981">✓</text>
+  <text x="900" y="833" text-anchor="middle" font-size="12" font-weight="700" fill="#10B981">✓</text>
+</svg>

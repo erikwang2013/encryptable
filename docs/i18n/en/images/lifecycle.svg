@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 860" role="img" aria-labelledby="lifeTitle lifeDesc"
+     font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif">
+  <title id="lifeTitle">Encryptable · Lifecycle</title>
+  <desc id="lifeDesc">Three lifecycles: the value lifecycle (write encrypts, read decrypts), the query lifecycle (deterministic encryption enables equality lookups), and the key-rotation lifecycle (new primary key, previous_keys ring, gradual re-encryption, retirement).</desc>
+
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4338CA"/>
+    </marker>
+    <style>
+      .panel { fill: #FFFFFF; stroke: #C7D2FE; stroke-width: 1.6 }
+      .step  { fill: #F2F5FF; stroke: #C7D2FE; stroke-width: 1.4 }
+      .t1    { font-size: 12.5px; font-weight: 700; fill: #1E1B4B; text-anchor: middle }
+      .t2    { font-size: 10px; fill: #64748B; text-anchor: middle }
+      .h     { font-size: 15px; font-weight: 700; fill: #1E1B4B }
+      .sub   { font-size: 11px; fill: #64748B }
+      .lbl   { font-size: 10px; font-weight: 700; fill: #4338CA; letter-spacing: 1.2px }
+      .fl    { stroke: #4338CA; stroke-width: 2.2; marker-end: url(#ar) }
+      .note  { font-size: 11px; fill: #64748B }
+      .pill  { fill: #F2F5FF; stroke: #C7D2FE; stroke-width: 1.4 }
+      .pt    { font-size: 11.5px; font-weight: 700; fill: #3730A3; text-anchor: middle }
+      .ps    { font-size: 9.5px; fill: #64748B; text-anchor: middle }
+    </style>
+  </defs>
+
+  <rect width="1160" height="860" rx="28" fill="#F7F9FF" stroke="#E0E7FF" stroke-width="1.5"/>
+  <text x="60" y="68" font-size="26" font-weight="700" fill="#312E81">Encryptable · Lifecycle</text>
+  <text x="60" y="96" font-size="13" fill="#64748B">Three lifecycles: value write/read round trip, encrypted-column query path, and key rotation from activation to retirement.</text>
+
+  <!-- ================= A. data lifecycle ================= -->
+  <rect class="panel" x="60" y="126" width="1040" height="256" rx="20"/>
+  <rect x="76" y="146" width="6" height="22" rx="3" fill="#4338CA"/>
+  <text class="h" x="96" y="164">Data lifecycle</text>
+  <text class="sub" x="96" y="184">Write encrypts, read decrypts; the two paths mirror each other (PHPEncrypter, key-ring decryption).</text>
+
+  <text class="lbl" x="100" y="208">WRITE</text>
+  <rect class="step" x="100" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="170" y="244">Plaintext</text><text class="t2" x="170" y="262">original value</text>
+  <path class="fl" d="M244 248 h16"/>
+  <rect class="step" x="264" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="334" y="244">Serialize</text><text class="t2" x="334" y="262">Serializer envelope</text>
+  <path class="fl" d="M408 248 h16"/>
+  <rect class="step" x="428" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="498" y="244">Dirty bit</text><text class="t2" x="498" y="262">“crypt:” prefix</text>
+  <path class="fl" d="M572 248 h16"/>
+  <rect class="step" x="592" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="662" y="244">AEAD encrypt</text><text class="t2" x="662" y="262">random IV · aes-256-gcm</text>
+  <path class="fl" d="M736 248 h16"/>
+  <rect class="step" x="756" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="826" y="244">HMAC tag</text><text class="t2" x="826" y="262">sha256 integrity</text>
+  <path class="fl" d="M900 248 h16"/>
+  <rect class="step" x="920" y="218" width="140" height="60" rx="14"/>
+  <text class="t1" x="990" y="244">base64 store</text><text class="t2" x="990" y="262">write encrypted column</text>
+
+  <text class="lbl" x="100" y="306">READ</text>
+  <rect class="step" x="100" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="170" y="342">Read ciphertext</text><text class="t2" x="170" y="360">from encrypted column</text>
+  <path class="fl" d="M244 346 h16"/>
+  <rect class="step" x="264" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="334" y="342">base64 decode</text><text class="t2" x="334" y="360">strict mode</text>
+  <path class="fl" d="M408 346 h16"/>
+  <rect class="step" x="428" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="498" y="342">HMAC verify</text><text class="t2" x="498" y="360">try each key in ring</text>
+  <path class="fl" d="M572 346 h16"/>
+  <rect class="step" x="592" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="662" y="342">Decrypt</text><text class="t2" x="662" y="360">primary or old key</text>
+  <path class="fl" d="M736 346 h16"/>
+  <rect class="step" x="756" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="826" y="342">Strip dirty bit</text><text class="t2" x="826" y="360">check “crypt:” marker</text>
+  <path class="fl" d="M900 346 h16"/>
+  <rect class="step" x="920" y="316" width="140" height="60" rx="14"/>
+  <text class="t1" x="990" y="342">unserialize</text><text class="t2" x="990" y="360">restore original value</text>
+
+  <!-- ================= B. query lifecycle ================= -->
+  <rect class="panel" x="60" y="406" width="1040" height="176" rx="20"/>
+  <rect x="76" y="426" width="6" height="22" rx="3" fill="#0D9488"/>
+  <text class="h" x="96" y="444">Query lifecycle</text>
+  <text class="sub" x="96" y="464">Deterministic encryption (DBEncrypter, aes-256-ecb) lets ciphertext columns support equality queries and unique checks.</text>
+
+  <rect class="step" x="100" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="170" y="506">Input value</text><text class="t2" x="170" y="524">form / request param</text>
+  <path class="fl" d="M244 510 h16"/>
+  <rect class="step" x="264" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="334" y="506">Deterministic</text><text class="t2" x="334" y="524">aes-128/256-ecb</text>
+  <path class="fl" d="M408 510 h16"/>
+  <rect class="step" x="428" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="498" y="506">WHERE equality</text><text class="t2" x="498" y="524">or unique index match</text>
+  <path class="fl" d="M572 510 h16"/>
+  <rect class="step" x="592" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="662" y="506">DB executes</text><text class="t2" x="662" y="524">compares ciphertext</text>
+  <path class="fl" d="M736 510 h16"/>
+  <rect class="step" x="756" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="826" y="506">Ciphertext hit</text><text class="t2" x="826" y="524">returns target row</text>
+  <path class="fl" d="M900 510 h16"/>
+  <rect class="step" x="920" y="480" width="140" height="60" rx="14"/>
+  <text class="t1" x="990" y="506">Decrypt result</text><text class="t2" x="990" y="524">via read path</text>
+
+  <text class="note" x="100" y="566">⚠ Equality and unique checks require deterministic encryption; gcm / cbc do not support them. Fuzzy and range queries never work; use a hash or indexed column.</text>
+
+  <!-- ================= C. key rotation lifecycle ================= -->
+  <rect class="panel" x="60" y="600" width="1040" height="224" rx="20"/>
+  <rect x="76" y="620" width="6" height="22" rx="3" fill="#B45309"/>
+  <text class="h" x="96" y="638">Key rotation lifecycle</text>
+  <text class="sub" x="96" y="658">Every step is reversible: old ciphertext stays readable while its key is in the decrypt ring. Encryption::php() only.</text>
+
+  <rect class="step" x="100" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="170" y="698">Generate new key</text><text class="t2" x="170" y="716">ENCRYPTION_KEY</text>
+  <path class="fl" d="M244 702 h16"/>
+  <rect class="step" x="264" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="334" y="698">Demote old key</text><text class="t2" x="334" y="716">append previous_keys</text>
+  <path class="fl" d="M408 702 h16"/>
+  <rect class="step" x="428" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="498" y="698">Deploy</text><text class="t2" x="498" y="716">both keys decrypt</text>
+  <path class="fl" d="M572 702 h16"/>
+  <rect class="step" x="592" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="662" y="698">Gradual re-encrypt</text><text class="t2" x="662" y="716">rotateToCurrentKey()</text>
+  <path class="fl" d="M736 702 h16"/>
+  <rect class="step" x="756" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="826" y="698">Remove old key</text><text class="t2" x="826" y="716">clear previous_keys</text>
+  <path class="fl" d="M900 702 h16"/>
+  <rect class="step" x="920" y="672" width="140" height="60" rx="14"/>
+  <text class="t1" x="990" y="698">Rotation done</text><text class="t2" x="990" y="716">primary key only</text>
+
+  <text class="lbl" x="100" y="762">KEY STATES</text>
+  <rect class="pill" x="140" y="772" width="170" height="40" rx="12"/>
+  <text class="pt" x="225" y="790">pending</text><text class="ps" x="225" y="804">not active yet</text>
+  <path class="fl" d="M314 792 h38"/>
+  <rect class="pill" x="360" y="772" width="170" height="40" rx="12"/>
+  <text class="pt" x="445" y="790">primary</text><text class="ps" x="445" y="804">used for new data</text>
+  <path class="fl" d="M534 792 h38"/>
+  <rect class="pill" x="580" y="772" width="170" height="40" rx="12"/>
+  <text class="pt" x="665" y="790">previous_keys</text><text class="ps" x="665" y="804">decrypt old data only</text>
+  <path class="fl" d="M754 792 h38"/>
+  <rect class="pill" x="800" y="772" width="170" height="40" rx="12"/>
+  <text class="pt" x="885" y="790">retired</text><text class="ps" x="885" y="804">removed from ring</text>
+</svg>
