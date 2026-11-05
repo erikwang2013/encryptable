@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 880" role="img" aria-labelledby="featTitle featDesc"
-     font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif">
+     font-family="'Noto Sans SC','Source Han Sans SC','Source Han Sans CN','DejaVu Sans','Liberation Sans',sans-serif">
   <title id="featTitle">Encryptable · Feature design</title>
   <desc id="featDesc">Six capabilities: transparent Eloquent cast, dual crypto paths (PHP and DB), queryable deterministic ciphertext, zero-downtime key rotation, multi-framework plus framework-free (native PHP) support, and install-time config publishing, plus a per-framework capability matrix.</desc>
 

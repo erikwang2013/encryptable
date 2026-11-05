@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 1010" role="img" aria-labelledby="archTitle archDesc"
-     font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif">
+     font-family="'Noto Sans SC','Source Han Sans SC','Source Han Sans CN','DejaVu Sans','Liberation Sans',sans-serif">
   <title id="archTitle">Encryptable · Architecture</title>
   <desc id="archDesc">Layered architecture: application layer calls the Encryption facade, which resolves PHPEncrypter or DBEncrypter through framework bridges, contracts and config (container or environment variables), with the Composer plugin writing config at install time.</desc>
 

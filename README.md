@@ -129,7 +129,7 @@ encryptable/
 │   └── Composer/Plugin.php             # install/update hook: publishes config for the detected stack
 ├── config/
 │   ├── encryptable.php                 # legacy flat config (still merged)
-│   └── stubs/                          # plugin-app · webman-plugin-app · hyperf-plugin-autoload · hyperf-autoload-encryptable
+│   └── stubs/                          # plugin-app · hyperf-plugin-autoload · hyperf-autoload-encryptable
 ├── docs/
 │   ├── pet.svg                         # Locky · 小锁灵 — the project pet
 │   ├── pet-expressions/                # 12 animated expression forms

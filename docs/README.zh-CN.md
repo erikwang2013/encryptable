@@ -127,7 +127,7 @@ encryptable/
 │   └── Composer/Plugin.php             # 安装/更新钩子：按识别到的框架栈写入配置
 ├── config/
 │   ├── encryptable.php                 # 旧版扁平配置（仍会被合并）
-│   └── stubs/                          # plugin-app · webman-plugin-app · hyperf-plugin-autoload · hyperf-autoload-encryptable
+│   └── stubs/                          # plugin-app · hyperf-plugin-autoload · hyperf-autoload-encryptable
 ├── docs/
 │   ├── pet.svg                         # Locky · 小锁灵 —— 项目宠物
 │   ├── pet-expressions/                # 12 个动态表情形态

@@ -29,7 +29,7 @@ class PHPEncrypter extends Encrypter
             return null;
         }
 
-        if ($this->isEncrypted($value)) {
+        if ($this->isEncrypted($value) && $this->isDecryptablePayload($value)) {
             return $value;
         }
 
@@ -141,10 +141,9 @@ class PHPEncrypter extends Encrypter
 
         $decoded = base64_decode($value, true);
 
-        // ponytail: format-only check (no HMAC/openssl work); a plaintext that
-        // happens to look like ciphertext (base64 + \x01/\x02 prefix) is treated
-        // as already encrypted — astronomically unlikely, acceptable. V0 (prefixless)
-        // legacy blobs are no longer flagged; rotateToCurrentKey skips them as-is.
+        // Cheap format-only check. encrypt() additionally verifies the payload
+        // decrypts before skipping, so a crafted lookalike cannot bypass encryption.
+        // V0 (prefixless) legacy blobs are not flagged; rotateToCurrentKey skips them as-is.
         if ($decoded === false || $decoded === '') {
             return false;
         }
@@ -156,6 +155,13 @@ class PHPEncrypter extends Encrypter
         }
 
         return strlen($decoded) >= 1 + self::HMAC_LENGTH + 1;
+    }
+
+    private function isDecryptablePayload(string $value): bool
+    {
+        $decoded = base64_decode($value, true);
+
+        return $decoded !== false && $this->tryOpenSSLDecrypt($decoded) !== null;
     }
 
     /**

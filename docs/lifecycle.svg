@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 860" role="img" aria-labelledby="lifeTitle lifeDesc"
-     font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif">
+     font-family="'Noto Sans SC','Source Han Sans SC','Source Han Sans CN','DejaVu Sans','Liberation Sans',sans-serif">
   <title id="lifeTitle">Encryptable 生命周期 / lifecycle</title>
   <desc id="lifeDesc">Three lifecycles: the value lifecycle (write encrypts, read decrypts), the query lifecycle (deterministic encryption enables equality lookups), and the key-rotation lifecycle (new primary key, previous_keys ring, gradual re-encryption, retirement).</desc>
 

@@ -1,7 +1,7 @@
 /vendor/
 /.phpunit.cache/
 /.phpunit.result.cache
-/tests/reports/phpunit.xml
+/tests/reports/
 composer.lock
 .claude
 .claude-flow

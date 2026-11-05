@@ -304,6 +304,19 @@ final class PHPEncrypterTest extends TestCase
         self::assertSame($once, $encrypter->encrypt($once));
     }
 
+    public function test_encrypt_does_not_skip_lookalike_ciphertext(): void
+    {
+        $encrypter = $this->make(str_repeat('k', 16));
+        $plain = base64_encode("\x01" . str_repeat("\x00", 40));
+
+        // Format-only detection flags it; encrypt() must authenticate before skipping.
+        self::assertTrue($encrypter->isEncrypted($plain));
+
+        $payload = $encrypter->encrypt($plain, false);
+        self::assertNotSame($plain, $payload);
+        self::assertSame($plain, $encrypter->decrypt($payload, false));
+    }
+
     // ── Scalar roundtrips through serialize ──
 
     public function test_scalar_roundtrips(): void

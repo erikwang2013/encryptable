@@ -47,8 +47,7 @@ class DBEncrypter extends Encrypter
     /**
      * Lightweight heuristic: strict base64 + length floor (32-byte HMAC + 1 byte ciphertext) +
      * first byte is not a PHP-format marker (\x01/\x02). Intentionally cheap — no decryption.
-     * A false positive on arbitrary base64 strings is possible; a false negative (~2/256, when a
-     * DB HMAC happens to start with \x01/\x02) would double-encrypt.
+     * False positives are possible, so encrypt() HMAC-verifies before skipping a payload.
      */
     public function isEncrypted(mixed $value): bool
     {
@@ -72,7 +71,7 @@ class DBEncrypter extends Encrypter
             return null;
         }
 
-        if ($this->isEncrypted($value)) {
+        if (is_string($value) && $this->isEncrypted($value) && $this->isDecryptablePayload($value)) {
             return $value;
         }
 
@@ -121,6 +120,30 @@ class DBEncrypter extends Encrypter
             $payload,
             $this->escapeSqlString($this->getEncryptionKey())
         );
+    }
+
+    /**
+     * True only when the payload is a DB-format ciphertext decryptable with a key in the ring.
+     * Prevents base64-looking plaintext from being mistaken for ciphertext during encrypt().
+     */
+    private function isDecryptablePayload(string $value): bool
+    {
+        $decoded = base64_decode($value, true);
+        if ($decoded === false || strlen($decoded) < self::HMAC_LENGTH + 1) {
+            return false;
+        }
+
+        $hmac = substr($decoded, 0, self::HMAC_LENGTH);
+        $ciphertext = substr($decoded, self::HMAC_LENGTH);
+
+        foreach ($this->getDecryptionKeyRing() as $key) {
+            $plain = openssl_decrypt($ciphertext, $this->getEcbCipher(), $key, OPENSSL_RAW_DATA);
+            if ($plain !== false && hash_equals(hash_hmac(self::HMAC_ALGO, $plain, self::deriveHmacKey($key), true), $hmac)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function getEcbCipher(): string

@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 1010" role="img" aria-labelledby="archTitle archDesc"
-     font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif">
+     font-family="'Noto Sans SC','Source Han Sans SC','Source Han Sans CN','DejaVu Sans','Liberation Sans',sans-serif">
   <title id="archTitle">Encryptable 架构设计</title>
   <desc id="archDesc">分层架构：应用层调用 Encryption 门面，经框架桥接、契约与配置（容器或环境变量）解析 PHPEncrypter 或 DBEncrypter，安装期由 Composer 插件写入配置。</desc>
 

@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 880" role="img" aria-labelledby="featTitle featDesc"
-     font-family="ui-sans-serif,-apple-system,'Segoe UI','Noto Sans SC','Microsoft YaHei',sans-serif">
+     font-family="'Noto Sans SC','Source Han Sans SC','Source Han Sans CN','DejaVu Sans','Liberation Sans',sans-serif">
   <title id="featTitle">Encryptable 功能设计</title>
   <desc id="featDesc">六项能力：透明 Eloquent 转换、双加密路径（PHP 与 DB）、可检索的确定性密文、零停机密钥轮换、多框架与无框架（原生 PHP）支持、安装即配置，并附各框架能力矩阵。</desc>
 

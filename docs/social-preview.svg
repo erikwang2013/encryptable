@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="spTitle spDesc"
-     font-family="'Source Han Sans CN','Noto Sans SC','Segoe UI','Microsoft YaHei',sans-serif">
+     font-family="'Noto Sans SC','Source Han Sans SC','Source Han Sans CN','DejaVu Sans','Liberation Sans',sans-serif">
   <title id="spTitle">Encryptable — query-friendly encryption for PHP</title>
   <desc id="spDesc">GitHub social preview: Locky the padlock pet beside the Encryptable title, tagline, and supported frameworks.</desc>
 

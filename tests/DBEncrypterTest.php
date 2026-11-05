@@ -122,6 +122,23 @@ final class DBEncrypterTest extends TestCase
         self::assertSame($payload, $db->encrypt($payload, false));
     }
 
+    public function test_encrypt_does_not_skip_base64_plaintext(): void
+    {
+        $key = str_repeat('k', 16);
+        $db = $this->makeDb($key, 'aes-128-ecb');
+        $plain = base64_encode(str_repeat("\x00", 40));
+
+        // The cheap heuristic flags it, but encrypt() must verify before skipping.
+        self::assertTrue($db->isEncrypted($plain));
+
+        $payload = $db->encrypt($plain, false);
+        self::assertNotSame($plain, $payload);
+
+        $decoded = base64_decode($payload, true);
+        self::assertNotFalse($decoded);
+        self::assertSame($plain, openssl_decrypt(substr($decoded, 32), 'aes-128-ecb', $key, OPENSSL_RAW_DATA));
+    }
+
     // ── SQL decrypt fragments ──
 
     public function test_mysql_fragment_structure(): void
